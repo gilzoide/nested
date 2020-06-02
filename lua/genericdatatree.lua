@@ -40,9 +40,9 @@ SpaceButEOL <- (!%nl %s)*
 })
 
 --- Module 
-local SymbolTree = {}
+local GenericDataTree = {}
 
-function SymbolTree.parse(text)
+function GenericDataTree.parse(text)
     local res, err, pos = grammar:match(text)
     if not res then
         local line, col = re.calcline(text, pos)
@@ -52,4 +52,4 @@ function SymbolTree.parse(text)
     return res
 end
 
-return SymbolTree
+return GenericDataTree
