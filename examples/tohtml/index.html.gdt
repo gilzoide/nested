@@ -1,0 +1,17 @@
+!DOCTYPE html=true
+html {
+  head {
+    meta charset=utf-8
+    title 'GenericDataTree -> HTML'
+    style "
+      .content {
+        color: blue;
+      }
+    "
+  }
+  body {
+    div class=content "
+      Hello World!
+    "
+  }
+}

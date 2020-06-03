@@ -52,4 +52,15 @@ function GenericDataTree.parse(text)
     return res
 end
 
+local function next_not_i(t, index)
+    local value
+    repeat
+        index, value = next(t, index)
+    until type(index) ~= 'number'
+    return index, value
+end
+function GenericDataTree.pairs(t)
+    return next_not_i, t, nil
+end
+
 return GenericDataTree
