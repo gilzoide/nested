@@ -7,7 +7,7 @@ Particularly, an empty list with metadata would be like an *associative array*, 
 
 
 ## Format
-- Whitespace separates list nodes
+- Whitespace or commas `,` separates list nodes
 - Any non-whitespace sequence that don't fall in any of the following rules
   is a text value
 - Parenthesis `()` explicitly delimit a list and ignore new lines
@@ -16,7 +16,7 @@ Particularly, an empty list with metadata would be like an *associative array*, 
 - Square brackets `[]` delimit a sublist, where each new line with
   any elements is a sublist of it
 - Single `'` and double `"` quotes delimit a single text value that
-  may contain otherwise special characters, like `()`, `[]`, or `:`.
+  may contain otherwise special characters, like `()`, `[]`, `,` or `:`.
   The following escape sequences are allowed:
   + `\a` - bell
   + `\b` - backspace
@@ -35,7 +35,7 @@ Particularly, an empty list with metadata would be like an *associative array*, 
 - Backticks ``` `` ``` also delimit a single text value, but ignoring 
   any of the above mentioned escape sequences.
 - A mumber sign `#` starts a comment, so the rest of the line text is discarded.
-  To use `#` in a text value, it must be quoted
+  To use `#` as the first character in a text value, the text must be quoted
 - A colon `:` just after a text value marks a key-value metadata binding
   with the just parsed text value being the key and the following node
   being a value. To use `:` in a text value, it must be quoted.

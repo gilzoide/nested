@@ -44,9 +44,9 @@ Expr <- Block / SExpr / KeyValue / Text
 
 Block <- '[' Space ({| '' |} (Line Space)* ) ~> append_values ']'^ErrClosingBlock
 SExpr <- '(' Space ({| '' |} (Expr Space)* ) ~> append_values ')'^ErrClosingParentheses
-KeyValue <- {: Text ':' Space Text^ErrAssignmentValue :}
+KeyValue <- {: Text ':' SpaceNotEOL (Block / SExpr / Text)^ErrAssignmentValue :}
 
-Text <- RawQuoted / EscapeQuoted / { Unquoted } / ':' %{ErrStartingColon} / '#' %{ErrStartingHash}
+Text <- RawQuoted / EscapeQuoted / { Unquoted } / ':' %{ErrStartingColon}
 RawQuoted <- RawSingleQuoted / RawDoubleQuoted / BacktickQuoted
 RawSingleQuoted <- "r'" { [^']* } "'"^ErrClosingSingleQuote
 RawDoubleQuoted <- 'r"' { [^"]* } '"'^ErrClosingDoubleQuote
@@ -54,7 +54,7 @@ BacktickQuoted <- '`' { [^`]* } '`'^ErrClosingBackticks
 EscapeQuoted <- EscapeSingleQuoted / EscapeDoubleQuoted
 EscapeSingleQuoted <- "'" {~ (Escaped / [^'])* ~} "'"^ErrClosingSingleQuote
 EscapeDoubleQuoted <- '"' {~ (Escaped / [^"])* ~} '"'^ErrClosingDoubleQuote
-Unquoted <- [^][%s,():#]+
+Unquoted <- [^][%s,():]+
 
 Space <- (Comment / EOL / OneSpaceNotEOL)*
 SpaceNotEOL <- OneSpaceNotEOL*
