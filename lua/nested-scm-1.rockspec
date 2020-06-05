@@ -1,12 +1,12 @@
-package = 'genericdatatree'
+package = 'nested'
 version = 'scm-1'
 source = {
-	url = 'git://github.com/gilzoide/genericdatatree',
+	url = 'git://github.com/gilzoide/nested',
 }
 description = {
-	summary = 'A generic tree data file format parser',
+	summary = 'A generic nested data structure file format parser',
 	detailed = [[
-A generic data tree file format parser
+A generic nested data structure file format parser
 ]],
 	license = 'LGPLv3',
 	maintainer = 'gilzoide <gilzoide@gmail.com>'
@@ -18,6 +18,6 @@ dependencies = {
 build = {
 	type = 'builtin',
 	modules = {
-		genericdatatree = 'genericdatatree.lua'
+		nested = 'nested.lua'
 	}
 }
