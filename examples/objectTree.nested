@@ -1,0 +1,9 @@
+Node a [
+    size:5 element: true
+    health: 100
+    atk: 2
+
+    Knockback [
+        'is common': no
+    ]
+]
