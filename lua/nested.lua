@@ -46,7 +46,7 @@ Block <- '[' Space ({| '' |} (Line Space)* ) ~> append_values ']'^ErrClosingBloc
 SExpr <- '(' Space ({| '' |} (Expr Space)* ) ~> append_values ')'^ErrClosingParentheses
 KeyValue <- {: Text ':' Space Text^ErrAssignmentValue :}
 
-Text <- RawQuoted / EscapeQuoted / { Unquoted } / ':' %{ErrStartingColon}
+Text <- RawQuoted / EscapeQuoted / { Unquoted } / ':' %{ErrStartingColon} / '#' %{ErrStartingHash}
 RawQuoted <- RawSingleQuoted / RawDoubleQuoted / BacktickQuoted
 RawSingleQuoted <- "r'" { [^']* } "'"^ErrClosingSingleQuote
 RawDoubleQuoted <- 'r"' { [^"]* } '"'^ErrClosingDoubleQuote

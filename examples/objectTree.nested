@@ -3,6 +3,7 @@ Node a [
     health: 100
     atk: 2
 
+    # children
     Knockback [
         'is common': no
     ]
