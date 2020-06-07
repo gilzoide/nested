@@ -1,16 +1,18 @@
-Enemy morcego [
-    size: 1
-    health: 100
-    atk: 2
-    x: 10, y: 50 z: 1
 
-    difficulties: (
-        easy
-        medium
-        hard
-    )
+size: 1
+health: 100
+atk: 2
+x: 10 y: 50 z: 1
 
-    # children
-    Sprite morcego.png flipX: true
-    Collision size: 1
-]
+difficulties: (
+    easy
+    medium
+    hard
+)
+
+# children
+Sprite src: morcego.png flipX: true
+Collision size: 1
+
+
+# size:1,health:100,atk:2,x:10,y:50,z:1,difficulties:[easy,medium,hard]Sprite,src:morcego.png,flipX:true;Collision,size:1
