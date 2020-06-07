@@ -8,11 +8,11 @@ local command = {
     KeyValue = 5,
 }
 local serialized_command = {
-    ',',
-    ';',
-    '[',
-    ']',
-    ':',
+    [command.SiblingText] = ',',
+    [command.SiblingNode] = ';',
+    [command.OpenNested]  = '[',
+    [command.CloseNested] = ']',
+    [command.KeyValue]    = ':',
 }
 
 constructor.command = command
