@@ -1,8 +1,8 @@
+local command = require 'nested'.command
+
 --- LPeg parser
 local lpeg = require 'lpeglabel'
 lpeg.locale(lpeg)
-
-local command = require 'nested.constructor'.command
 
 local grammar
 do
@@ -24,7 +24,7 @@ do
         return string.char(tonumber(s, 16))
     end
 
-    local EOL = lpeg.P'\n'
+    local EOL = lpeg.S'\n;'
     local EOF = lpeg.P(-1)
     local EOLOrEOF = EOL + EOF
     local Comment = lpeg.P'#' * (1 - EOL)^0
@@ -101,9 +101,7 @@ end
 --- Module 
 local re = require 'relabel'
 
-local parser = {}
-
-function parser.parse(text)
+local function parse(text)
     local res, err, pos = grammar:match(text)
     if not res then
         local line, col = re.calcline(text, pos)
@@ -113,4 +111,4 @@ function parser.parse(text)
     return res
 end
 
-return parser
+return parse
