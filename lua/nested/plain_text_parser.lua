@@ -24,11 +24,11 @@ do
         return string.char(tonumber(s, 16))
     end
 
-    local EOL = lpeg.S'\n;'
+    local EOL = lpeg.S'\n'
     local EOF = lpeg.P(-1)
     local EOLOrEOF = EOL + EOF
     local Comment = lpeg.P'#' * (1 - EOL)^0
-    local OneSpaceNotEOL = (lpeg.space + lpeg.S',') - EOL
+    local OneSpaceNotEOL = (lpeg.space + lpeg.S',;') - EOL
     local SpaceNotEOL = OneSpaceNotEOL^0
     local Space = (Comment + EOL + OneSpaceNotEOL)^0
 
@@ -38,7 +38,7 @@ do
         + (lpeg.P'u{' * lpeg.C(lpeg.xdigit^1) * lpeg.P'}') / from_hexa
     ) + lpeg.T'ErrInvalidEscapeSequence')
 
-    local Unquoted = lpeg.C((1 - lpeg.space - lpeg.S'[](),:')^1)
+    local Unquoted = lpeg.C((1 - lpeg.space - lpeg.S'[](),:;')^1)
     local function create_escaped_quote(opening, closing, label)
         opening = lpeg.P(opening)
         closing = lpeg.P(closing)
@@ -82,7 +82,7 @@ do
 
     local Line =
         (lpeg.V'KeyValue' * SpaceNotEOL)^1 * #EOLOrEOF
-        + (lpeg.V'Expr' * SpaceNotEOL)^1 * (EOL * lpeg.Cc(command.SiblingNode))^0
+        + (lpeg.V'Expr' * SpaceNotEOL)^1 * (EOL * lpeg.Cc(command.SiblingNode))^-1
 
     local Chunk = Space * lpeg.Ct((lpeg.V'Line' * Space)^0) * EOF
 
