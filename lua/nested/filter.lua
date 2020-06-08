@@ -12,7 +12,7 @@ end
 
 filter.parse_number = tonumber
 
--- Lua 5.1 and 5.2+ compatibility
+-- Lua 5.1 / 5.2+ compatibility
 local loadstring = loadstring or load
 
 --- @warning Loading arbitrary code from untrusted sources is a major security flaw!!!

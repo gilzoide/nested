@@ -18,6 +18,15 @@ dependencies = {
 build = {
 	type = 'builtin',
 	modules = {
-		nested = 'nested.lua'
-	}
+		['nested.init'] = 'nested/init.lua',
+		['nested.filter'] = 'nested/filter.lua',
+		['nested.utils'] = 'nested/utils.lua',
+		['nested.compiler'] = 'nested/compiler.lua',
+		['nested.plain_text_parser'] = 'nested/plain_text_parser.lua',
+	},
+	install = {
+		bin = {
+			['nested'] = 'main.lua'
+		}
+	},
 }
