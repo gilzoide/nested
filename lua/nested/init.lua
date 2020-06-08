@@ -1,3 +1,4 @@
+local try_filters = require 'nested.filter'.try_filters
 local utils = require 'nested.utils'
 
 local nested = {}
@@ -23,25 +24,25 @@ nested.quote_character = '`'
 nested.quote_character_escape = '``'
 
 local read_atom, read_table
-read_atom = function(s)
+read_atom = function(s, filters)
     local first = s:sub(1, 1)
     if first == '[' then
-        return read_table(s:sub(2))
+        return read_table(s:sub(2), filters)
     elseif first == nested.quote_character then
         -- TODO: handle double-quotes
         local atom, pos = s:sub(2):match('(.-)' .. nested.quote_character .. '()')
-        return atom, s:sub(pos + 1)
+        return try_filters(atom, filters), s:sub(pos + 1)
     else
         local pos = s:match('()' .. nested.special_character_pattern) or #s + 1
-        return s:sub(1, pos - 1), s:sub(pos)
+        return try_filters(s:sub(1, pos - 1), filters), s:sub(pos)
     end
 end
-read_table = function(s)
+read_table = function(s, filters)
     local toplevel = nil
     local current = {}
     local atom, first, key
     repeat
-        atom, s = read_atom(s)
+        atom, s = read_atom(s, filters)
         first, s = s:sub(1, 1), s:sub(2)
         if first == '' or first == ',' or first == ';' or first == ']' then
             current[key or #current + 1] = atom
@@ -60,9 +61,12 @@ read_table = function(s)
     return toplevel or current, s
 end
 
-function nested.build(compiled)
+function nested.build(compiled, filters, ...)
     assert(type(compiled) == 'string', "String expected, found " .. type(compiled))
-    local t = read_table(compiled)
+    if type(filters) ~= 'table' then
+        filters = { filters, ... }
+    end
+    local t = read_table(compiled, filters)
     return t
 end
 
