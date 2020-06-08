@@ -28,9 +28,9 @@ do
     local EOF = lpeg.P(-1)
     local EOLOrEOF = EOL + EOF
     local Comment = lpeg.P'#' * (1 - EOL)^0
-    local OneSpaceNotEOL = (lpeg.space + lpeg.S',;') - EOL
+    local OneSpaceNotEOL = Comment + ((lpeg.space + lpeg.S',;') - EOL)
     local SpaceNotEOL = OneSpaceNotEOL^0
-    local Space = (Comment + EOL + OneSpaceNotEOL)^0
+    local Space = (EOL + OneSpaceNotEOL)^0
 
     local Escaped = (lpeg.P'/' / '') * ((
         lpeg.S[[0abfrntv\"']] / escape_sequences
@@ -76,15 +76,17 @@ do
     local Block =
         lpeg.P'[' * lpeg.Cc(command.OpenNested)
         * Space
-        * (lpeg.V'Line' * Space)^0
+        * (lpeg.V'Line')^0
         * (lpeg.P']' + lpeg.T'ErrClosingBrackets') * lpeg.Cc(command.CloseNested)
     local Expr = lpeg.V'Block' + lpeg.V'SExpr' + lpeg.V'KeyValue' + lpeg.V'Text'
 
     local Line =
-        (lpeg.V'KeyValue' * SpaceNotEOL)^1 * #EOLOrEOF
-        + (lpeg.V'Expr' * SpaceNotEOL)^1 * (EOL * lpeg.Cc(command.SiblingNode))^-1
+        OneSpaceNotEOL^1
+        + SpaceNotEOL * EOL
+        + SpaceNotEOL * (lpeg.V'KeyValue' * SpaceNotEOL)^1 * #EOLOrEOF
+        + (lpeg.B(EOL) * lpeg.Cc(command.SiblingNode))^-1 * SpaceNotEOL * (lpeg.V'Expr' * SpaceNotEOL)^1
 
-    local Chunk = Space * lpeg.Ct((lpeg.V'Line' * Space)^0) * EOF
+    local Chunk = lpeg.Ct((lpeg.V'Line')^1) * EOF
 
     grammar = lpeg.P {
         'Chunk',
