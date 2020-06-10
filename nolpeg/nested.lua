@@ -6,7 +6,7 @@ local TOKEN = {
     'OPEN_BLOCK', 'CLOSE_BLOCK',
     'OPEN_PAREN', 'CLOSE_PAREN',
     'KEYVALUE', 
-    -- 'QUOTES', 'TEXT' -- both return as strings rather than number codes
+    -- 'QUOTES', 'TEXT' -- both return as strings rather than numeric codes
 }
 for i = 1, #TOKEN do TOKEN[TOKEN[i]] = i end
 
@@ -41,13 +41,15 @@ local lexical_scanners = {
     KEYVALUE = function(s) return TOKEN.KEYVALUE, 2 end,
     QUOTES = function(s)
         local delimiter = s:match('[\'\"`]')
-        -- TODO: escape sequence
-        local pos = s:sub(2):match(delimiter .. '()')
-        if pos then
-            return s:sub(2, pos - 1), pos + 1
-        else
-            return nil, string.format('Unmatched closing %q', delimiter)
+        local components = {}
+        for m, pos in s:sub(2):gmatch('([^' .. delimiter .. ']*' .. delimiter .. '?)' .. delimiter .. '()') do -- ([^']*'?)'()
+            components[#components + 1] = m
+            print('COMPONENT', m, m:sub(-1) ~= delimiter)
+            if m:sub(-1) ~= delimiter then
+                return table.concat(components), pos + 1
+            end
         end
+        return nil, string.format('Unmatched closing %q', delimiter)
     end,
     TEXT = function(s)
         return s:match('([^ ,;\t\r\n%[%]():]+)()')
@@ -117,6 +119,7 @@ local text = [[
 um dois tres: 4
 
 [
+    'texto entre ''quotes'' ''escapadas'''
     esse texto tem#hash#
     # daqui pra frente, comentario
 ]
