@@ -1,28 +1,26 @@
--- Ignore: blank ,;\t\r
--- Always special: \n()[]:
+-- Ignore: blank ,\t\r
+-- Always special: \n()[]:;
 -- Special if first in token: '"`#
 local TOKEN = {
     'SPACE', 'COMMENT', 'NEWLINE', 'EOF',
     'OPEN_BRACKETS', 'CLOSE_BRACKETS',
     'OPEN_PAREN', 'CLOSE_PAREN',
     'OPEN_BRACES', 'CLOSE_BRACES',
-    'KEYVALUE', 
+    'KEYVALUE', 'SIBLING_DELIMITER',
     -- 'QUOTES', 'TEXT' -- both return as strings rather than numeric codes
 }
 for i = 1, #TOKEN do TOKEN[TOKEN[i]] = i end
 
 local TOKEN_BY_PREFIX = {
-    [' '] = 'SPACE', [','] = 'SPACE', [';'] = 'SPACE', ['\t'] = 'SPACE', ['\r'] = 'SPACE',
+    [' '] = 'SPACE', [','] = 'SPACE', ['\t'] = 'SPACE', ['\r'] = 'SPACE',
     ['#'] = 'COMMENT',
     ['\n'] = 'NEWLINE',
     [''] = 'EOF',
-    ['['] = 'OPEN_BRACKETS',
-    [']'] = 'CLOSE_BRACKETS',
-    ['('] = 'OPEN_PAREN',
-    [')'] = 'CLOSE_PAREN',
-    ['{'] = 'OPEN_BRACES',
-    ['}'] = 'CLOSE_BRACES',
+    ['['] = 'OPEN_BRACKETS', [']'] = 'CLOSE_BRACKETS',
+    ['('] = 'OPEN_PAREN', [')'] = 'CLOSE_PAREN',
+    ['{'] = 'OPEN_BRACES', ['}'] = 'CLOSE_BRACES',
     [':'] = 'KEYVALUE',
+    [';'] = 'SIBLING_DELIMITER',
     ["'"] = 'QUOTES', ['"'] = 'QUOTES', ['`'] = 'QUOTES',
 }
 local MATCHING_CLOSING_BLOCK = {
@@ -49,6 +47,7 @@ local lexical_scanners = {
     OPEN_BRACES = function(s) return TOKEN.OPEN_BRACES, 2 end,
     CLOSE_BRACES = function(s) return TOKEN.CLOSE_BRACES, 2 end,
     KEYVALUE = function(s) return TOKEN.KEYVALUE, 2 end,
+    SIBLING_DELIMITER = function(s) return TOKEN.SIBLING_DELIMITER, 2 end,
     QUOTES = function(s)
         local delimiter = s:match('[\'\"`]')
         local components = {}
@@ -61,7 +60,7 @@ local lexical_scanners = {
         return nil, string.format('Unmatched closing %q', delimiter)
     end,
     TEXT = function(s)
-        return s:match('([^ ,;\t\r\n%[%]():]+)()')
+        return s:match('([^ ,\t\r\n%[%]():;]+)()')
     end,
 }
 
@@ -89,92 +88,68 @@ end
 function Parser:match(s)
     self.text = s
     self.line, self.column = 1, 1
-    local block, err = self:read_block(s, TOKEN.EOF)
-    if block == nil then return nil, string.format('Error at line %u (col %u): %s', self.line, self.column, err)
-    else return block 
+    local success, result = pcall(self.read_block, self, s, TOKEN.EOF)
+    if not success then return nil, string.format('Error at line %u (col %u): %s', self.line, self.column, result)
+    else return result 
     end
 end
 
-function Parser:read_block(s, expected_closing, into_block)
-    local block = into_block or {}
-    local target = block
-    local next_atom_is_nested = false
-    local key, value, token, previous_token, advance
+function Parser:read_block(s, expected_closing)
+    local block = {}
+    local initial_length = #s
+    local toplevel, key, token, previous_token, advance
     repeat
         previous_token = token
         token, advance = next_token(s)
-        -- print(readable_token(previous_token), readable_token(token))
         if token == nil then
-            return nil, advance
+            error(advance, 0)
         elseif type(token) == 'string' then
-            if key then
-                target[key] = token
-                key = nil
-            elseif peek_token_type_name(s:sub(advance)) == 'KEYVALUE' then
-                key = token
-            elseif next_atom_is_nested then
-                target, s = self:read_block(s:sub(advance), nil, { token })
-                if target == nil then return nil, s end
-                advance = 1
-                block[#block + 1] = target
-                next_atom_is_nested = false
+            if key or peek_token_type_name(s:sub(advance)) ~= 'KEYVALUE' then
+                block[key or #block + 1], key = token, nil
             else
-                target[#target + 1] = token
-            end
-        elseif token == expected_closing then
-            -- block closed correctly, advance `s` and break normally
-        elseif token == TOKEN.EOF or token == TOKEN.CLOSE_BRACKETS or token == TOKEN.CLOSE_PAREN or token == TOKEN.CLOSE_BRACES then
-            if expected_closing == nil then break
-            else return nil, string.format('Expected closing block with %s, but found %s', TOKEN[expected_closing], TOKEN[token])
-            end
-        elseif token == TOKEN.OPEN_BRACKETS or token == TOKEN.OPEN_PAREN or token == TOKEN.OPEN_BRACES then
-            value, s = self:read_block(s:sub(advance), MATCHING_CLOSING_BLOCK[token])
-            if value == nil then return nil, s end
-            target[key or #target + 1] = value
-            key = nil
-            next_atom_is_nested = false
-        elseif token == TOKEN.KEYVALUE then
-            if type(previous_token) ~= 'string' then
-                return nil, string.format('Key-value mapping must appear right after text, found %s instead', TOKEN[previous_token])
+                key = token
             end
         elseif token == TOKEN.NEWLINE then
             self.line = self.line + 1
             self.column = 0 -- after advance, column will be 1
-            if expected_closing ~= TOKEN.CLOSE_PAREN then
-                next_atom_is_nested = true
+        elseif token == expected_closing then
+            -- block closed correctly, advance `s` and break normally
+        elseif token == TOKEN.EOF or token == TOKEN.CLOSE_BRACKETS or token == TOKEN.CLOSE_PAREN or token == TOKEN.CLOSE_BRACES then
+            error(string.format('Expected closing block with %s, but found %s', readable_token(expected_closing), readable_token(token)), 0)
+        elseif token == TOKEN.OPEN_BRACKETS or token == TOKEN.OPEN_PAREN or token == TOKEN.OPEN_BRACES then
+            local child_block, read_length = self:read_block(s:sub(advance), MATCHING_CLOSING_BLOCK[token])
+            block[key or #block + 1], key = child_block, nil
+            advance = advance + read_length
+        elseif token == TOKEN.KEYVALUE then
+            if type(previous_token) ~= 'string' then
+                error(string.format('Key-value mapping must appear right after text, found %s instead', readable_token(previous_token)), 0)
             end
+        elseif token == TOKEN.SIBLING_DELIMITER then
+            if toplevel == nil then toplevel = { block } end
+            block = {}
+            toplevel[#toplevel + 1] = block
         else
-            assert(token == TOKEN.SPACE or token == TOKEN.COMMENT, 'FIXME!!!')
+            assert(token == TOKEN.SPACE or token == TOKEN.COMMENT, 'FIXME!!!') -- TODO: after thorough testing, remove unecessary assertion
         end
         s = s:sub(advance)
         self.column = self.column + advance - 1
     until token == expected_closing
-    return block, s
+    return toplevel or block, initial_length - #s
 end
 
 local text = [[
-size: 30
-paranaue: 50
+[Tank t
+    x: 10 y: 20 z: 50
+];
 
-filho1 {
-    size: 20
+[Tank t2
+    x: t.x y: t.y z: t.z
 
-    filho2 {
-        
-    }
-}
+    [1 2 3];
+    [3 2 1]
+];
 
-um dois tres: 4
-
-[
-    'texto entre ''quotes'' ''escapadas'''
-    esse texto tem#hash#: sim
-    vazio: ''
-    # daqui pra frente, comentario
-]
-
-cinco:
-    (1 2 5)
+a; b; c
 ]]
 local result = assert(Parser.new():match(text))
 
