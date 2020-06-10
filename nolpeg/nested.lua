@@ -44,7 +44,6 @@ local lexical_scanners = {
         local components = {}
         for m, pos in s:sub(2):gmatch('([^' .. delimiter .. ']*' .. delimiter .. '?)' .. delimiter .. '()') do -- ([^']*'?)'()
             components[#components + 1] = m
-            print('COMPONENT', m, m:sub(-1) ~= delimiter)
             if m:sub(-1) ~= delimiter then
                 return table.concat(components), pos + 1
             end
@@ -74,13 +73,11 @@ end
 
 function Parser:__call(s)
     self.text = s
-    self.block_level = 0
-    self.line = 1
-    self.column = 1
+    self.line, self.column = 1, 1
     local block, err = self:read_block(s, TOKEN.EOF)
     if block == nil then return nil, string.format('Error at line %u (col %u): %s', self.line, self.column, err)
     else return block 
-end
+    end
 end
 
 function Parser:read_block(s, expected_closing)
