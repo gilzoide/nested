@@ -1,15 +1,18 @@
 -- Ignore: blank ,;\t\r
 -- Always special: \n()[]:
 -- Special if first in token: '"`#
-local TOKENS = {
-    'SPACE', 'NEWLINE', 'EOF',
-    'OPEN_BLOCK', 'CLOSE_BLOCK', 'SIBLING_BLOCK',
+local TOKEN = {
+    'SPACE', 'COMMENT', 'NEWLINE', 'EOF',
+    'OPEN_BLOCK', 'CLOSE_BLOCK',
     'OPEN_PAREN', 'CLOSE_PAREN',
-    'KEYVALUE', 'QUOTES', 'COMMENT',
+    'KEYVALUE', 
+    -- 'QUOTES', 'TEXT' -- both return as strings rather than number codes
 }
-for i = 1, #TOKENS do TOKENS[TOKENS[i]] = i end
+for i = 1, #TOKEN do TOKEN[TOKEN[i]] = i end
+
 local TOKEN_STARTER = {
     [' '] = 'SPACE', [','] = 'SPACE', [';'] = 'SPACE', ['\t'] = 'SPACE', ['\r'] = 'SPACE',
+    ['#'] = 'COMMENT',
     ['\n'] = 'NEWLINE',
     [''] = 'EOF',
     ['['] = 'OPEN_BLOCK',
@@ -18,21 +21,24 @@ local TOKEN_STARTER = {
     [')'] = 'CLOSE_PAREN',
     [':'] = 'KEYVALUE',
     ["'"] = 'QUOTES', ['"'] = 'QUOTES', ['`'] = 'QUOTES',
-    ['#'] = 'COMMENT',
 }
 -- Each function returns token, advance
-local scanners = {
+local lexical_scanners = {
     SPACE = function(s)
         local pos = s:match('[ ,;\t\r]+()')
-        return TOKENS.SPACE, pos
+        return TOKEN.SPACE, pos
     end,
-    NEWLINE = function(s) return TOKENS.NEWLINE, 2 end,
-    OPEN_BLOCK = function(s) return TOKENS.OPEN_BLOCK, 2 end,
-    CLOSE_BLOCK = function(s) return TOKENS.CLOSE_BLOCK, 2 end,
-    SIBLING_BLOCK = function(s) return TOKENS.SIBLING_BLOCK, 2 end,
-    OPEN_PAREN = function(s) return TOKENS.OPEN_PAREN, 2 end,
-    CLOSE_PAREN = function(s) return TOKENS.CLOSE_PAREN, 2 end,
-    KEYVALUE = function(s) return TOKENS.KEYVALUE, 2 end,
+    COMMENT = function(s)
+        local pos = s:match('#[^\n]+()')
+        return TOKEN.COMMENT, pos
+    end,
+    NEWLINE = function(s) return TOKEN.NEWLINE, 2 end,
+    EOF = function(s) return TOKEN.EOF, 0 end,
+    OPEN_BLOCK = function(s) return TOKEN.OPEN_BLOCK, 2 end,
+    CLOSE_BLOCK = function(s) return TOKEN.CLOSE_BLOCK, 2 end,
+    OPEN_PAREN = function(s) return TOKEN.OPEN_PAREN, 2 end,
+    CLOSE_PAREN = function(s) return TOKEN.CLOSE_PAREN, 2 end,
+    KEYVALUE = function(s) return TOKEN.KEYVALUE, 2 end,
     QUOTES = function(s)
         local delimiter = s:match('[\'\"`]')
         -- TODO: escape sequence
@@ -43,35 +49,68 @@ local scanners = {
             return nil, string.format('Unmatched closing %q', delimiter)
         end
     end,
-    COMMENT = function(s)
-        local pos = s:match('#[^\n]+()')
-        return TOKENS.COMMENT, pos
-    end,
     TEXT = function(s)
         return s:match('([^ ,;\t\r\n%[%]():]+)()')
     end,
-    EOF = function(s) return TOKENS.EOF, 0 end
 }
 
 --- Read the next token 
 -- @return Token and `s` without it on success
--- @return false and error message on error (when opening quotes without closing)
--- @return nil on end of input
+-- @return nil and error message on error (when opening quotes without closing)
 local function next_token(s)
     local starter = s:sub(1, 1)
     local rule = TOKEN_STARTER[starter] or 'TEXT'
-    return scanners[rule](s)
+    return lexical_scanners[rule](s)
+end
+
+local Parser = {}
+Parser.__index = Parser
+
+function Parser.new()
+    return setmetatable({}, Parser)
+end
+
+function Parser:__call(s)
+    self.text = s
+    self.block_level = 0
+    self.line = 1
+    self.column = 1
+    return self:read_block(s, TOKEN.EOF)
+end
+
+function Parser:read_block(s, expected_closing)
+    local block = {}
+    local current_child = 0
+    local key, value
+    repeat
+        local token, advance = next_token(s)
+        print(type(token) == 'number' and TOKEN[token] or token, advance)
+        if token == nil then return nil, advance
+        elseif type(token) == 'string' then
+            value = token
+        elseif token == expected_closing then
+            -- block closed correctly, advance `s` and break normally
+        elseif token == TOKEN.CLOSE_BLOCK or token == TOKEN.CLOSE_PAREN or token == TOKEN.EOF then
+            if expected_closing == nil then break
+            else return nil, string.format('Expected closing block with %s, but found %s', TOKEN[expected_closing], TOKEN[token])
+            end
+        elseif token == TOKEN.OPEN_BLOCK or token == TOKEN.OPEN_PAREN then
+            value, s = self:read_block(s:sub(advance), token == TOKEN.OPEN_BLOCK and TOKEN.CLOSE_BLOCK or TOKEN.CLOSE_PAREN)
+            if value == nil then return nil, s end
+        elseif token == TOKEN.KEYVALUE then
+            key = value
+            value = nil
+        end
+        s = s:sub(advance)
+    until token == expected_closing
+    return block, s
 end
 
 local text = [[
 um dois tres: 4
 
 [
-    texto 'olars gente'
+    esse texto
 ]
 ]]
-repeat
-    local token, advance = assert(next_token(text))
-    text = text:sub(advance)
-    print(type(token) == 'number' and TOKENS[token] or token, advance)
-until not token or token == TOKENS.EOF
+print(Parser.new()(text))
