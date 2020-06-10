@@ -137,20 +137,13 @@ function Parser:read_block(s, expected_closing)
     return toplevel or block, initial_length - #s
 end
 
-local text = [[
-[Tank t
-    x: 10 y: 20 z: 50
-];
+--- Module handler
+local nested = {}
 
-[Tank t2
-    x: t.x y: t.y z: t.z
+nested.Parser = Parser
 
-    [1 2 3];
-    [3 2 1]
-];
+function nested.match(...)
+    return Parser.new():match(...)
+end
 
-a; b; c
-]]
-local result = assert(Parser.new():match(text))
-
-print(require 'inspect'(result))
+return nested
