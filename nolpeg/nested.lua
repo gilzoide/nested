@@ -71,7 +71,7 @@ function Parser.new()
     return setmetatable({}, Parser)
 end
 
-function Parser:__call(s)
+function Parser:match(s)
     self.text = s
     self.line, self.column = 1, 1
     local block, err = self:read_block(s, TOKEN.EOF)
@@ -117,12 +117,12 @@ um dois tres: 4
 
 [
     'texto entre ''quotes'' ''escapadas'''
-    esse texto tem#hash#
+    esse texto tem#hash#: sim
     # daqui pra frente, comentario
 ]
 
-cinco: ()
+cinco: (1 2 5)
 ]]
-local result = assert(Parser.new()(text))
+local result = assert(Parser.new():match(text))
 
 print(require 'inspect'(result))
