@@ -75,7 +75,10 @@ function Parser:__call(s)
     self.block_level = 0
     self.line = 1
     self.column = 1
-    return self:read_block(s, TOKEN.EOF)
+    local block, err = self:read_block(s, TOKEN.EOF)
+    if block == nil then return nil, string.format('Error at line %u (col %u): %s', self.line, self.column, err)
+    else return block 
+end
 end
 
 function Parser:read_block(s, expected_closing)
@@ -100,8 +103,12 @@ function Parser:read_block(s, expected_closing)
         elseif token == TOKEN.KEYVALUE then
             key = value
             value = nil
+        elseif token == TOKEN.NEWLINE then
+            self.line = self.line + 1
+            self.column = 0 -- after advance, column will be 1
         end
         s = s:sub(advance)
+        self.column = self.column + advance - 1
     until token == expected_closing
     return block, s
 end
@@ -110,7 +117,12 @@ local text = [[
 um dois tres: 4
 
 [
-    esse texto
+    esse texto tem#hash#
+    # daqui pra frente, comentario
 ]
+
+cinco: ()
 ]]
-print(Parser.new()(text))
+local result = assert(Parser.new()(text))
+
+print(require 'inspect'(result))
