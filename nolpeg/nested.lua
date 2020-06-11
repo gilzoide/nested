@@ -139,14 +139,14 @@ local function kpairs(t)
 end
 
 --- Dump
-local function encode(t, tight)
+local function encode(t, compact)
     if type(t) == 'table' then
         local result = {}
         local function append(v) result[#result + 1] = v end
         for i, v in ipairs(t) do
-            local encoded_value = encode(v, tight)
+            local encoded_value = encode(v, compact)
             if type(v) == 'table' then
-                if tight and result[#result] == ' ' then result[#result] = nil end
+                if compact and result[#result] == ' ' then result[#result] = nil end
                 if result[#result] == ']' then
                     result[#result] = ';'
                 else
@@ -157,11 +157,11 @@ local function encode(t, tight)
             else
                 append(encoded_value)
             end
-            if not tight or result[#result] ~= ']' then append(' ') end
+            if not compact or result[#result] ~= ']' then append(' ') end
         end
         for k, v in kpairs(t) do
             append(encode(k) .. ':')
-            if not tight then append(' ') end
+            if not compact then append(' ') end
             append(encode(v))
             append(' ')
         end
@@ -170,7 +170,7 @@ local function encode(t, tight)
     else
         local encoded_value = tostring(t)
         if encoded_value:match('[ ,\t\r\n%[%]():;]') or encoded_value:match('^[\'\"`#]') then
-            -- TODO: if tight, find out the quotation mark that requires less escaping
+            -- TODO: if compact, find out the quotation mark that requires less escaping
             encoded_value = '"' .. encoded_value:gsub('"', '""') .. '"'
         end
         return encoded_value
