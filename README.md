@@ -22,6 +22,6 @@ Particularly, an empty list with metadata would be like an *associative array*, 
   with the just parsed text value being the key and the following node
   being a value. To use `:` in a text value, the text must be quoted.
   Notice that keys are always text, but values can be either text or nested lists.
-- A semicolon `;` delimits separate nested lists, so that new values parsed are
+- A semi-colon `;` delimits separate nested lists, so that new values parsed are
   stored in a brand new list. For example, the line `a b; c d; e f` evaluates to
   the same nested structure as `[a b] [c d] [e f]`.
