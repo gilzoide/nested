@@ -90,7 +90,9 @@ local function read_block(state, s, expected_closing)
         token, advance = read_next_token(s)
         if type(token) == 'string' then
             if key or peek_token_type_name(s:sub(advance)) ~= 'KEYVALUE' then
-                block[key or #block + 1], key = token, nil
+                local value = state.text_filter and state.text_filter(token)
+                if value == nil then value = token end
+                block[key or #block + 1], key = value, nil
             else
                 key = token
             end
@@ -121,9 +123,9 @@ local function read_block(state, s, expected_closing)
     return toplevel or block, initial_length - #s
 end
 
---- TODO: support streamed IO, add value filters to apply in text values
-local function decode(s)
-    local state = { line = 1, column = 1 }
+--- TODO: support streamed IO
+local function decode(s, text_filter)
+    local state = { line = 1, column = 1, text_filter = text_filter }
     local success, result = pcall(read_block, state, s, TOKEN.EOF)
     if not success then return nil, string.format('Error at line %u (col %u): %s', state.line, state.column, result)
     else return result 
@@ -201,15 +203,22 @@ local function encode_to_file(stream, ...)
     return true
 end
 
+----------  Filter  ----------
+local function bool_number_filter(s)
+    if s == 'true' then return true
+    elseif s == 'false' then return false
+    else return tonumber(s)
+    end
+end
+
 ----------  Module  ----------
-local nested = {}
-
-nested.metadata = kpairs
-nested.decode = decode
-nested.decode_file = decode_file
-nested.encode = encode
-nested.encode_to_file = encode_to_file
-
-return nested
+return {
+    decode = decode,
+    decode_file = decode_file,
+    encode = encode,
+    encode_to_file = encode_to_file,
+    metadata = kpairs,
+    bool_number_filter = bool_number_filter,
+}
 
 -- TODO: document stuff
