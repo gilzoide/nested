@@ -130,12 +130,13 @@ local function decode(s)
     end
 end
 
-local function decode_file(filename)
-    local f, err, code = io.open(filename)
-    if not f then return nil, err, code end
-    local contents = f:read('*a')
-    f:close()
-    return decode(contents)
+local function decode_file(stream, ...)
+    local previous = io.input()
+    stream = io.input(stream)
+    local contents = stream:read('*a')
+    stream:close()
+    io.input(previous)
+    return decode(contents, ...)
 end
 
 ----------  Metadata iterator  ----------
@@ -190,17 +191,17 @@ local function encode(t, compact)
     end
 end
 
-local function encode_to_file(t, filename)
-    local encoded_value, err = encode(t)
+local function encode_to_file(stream, ...)
+    local encoded_value, err = encode(...)
     if not encoded_value then return nil, err end
-    local f, err, code = io.open(filename, 'w')
-    if not f then return nil, err, code end
-    f, err = f:write(encoded_value)
-    f:close()
-    return f, err
+    local previous = io.output()
+    stream = io.output(stream)
+    stream:write(encoded_value)
+    stream:close()
+    return true
 end
 
---- Module handler
+----------  Module  ----------
 local nested = {}
 
 nested.metadata = kpairs
@@ -210,3 +211,5 @@ nested.encode = encode
 nested.encode_to_file = encode_to_file
 
 return nested
+
+-- TODO: document stuff
