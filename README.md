@@ -24,4 +24,3 @@ Particularly, an empty list with metadata would be like an *associative array*, 
 - A semicolon `;` delimits separate nested lists, so that new values parsed are
   stored in a brand new list. For example, the line `a b; c d; e f` evaluates to
   the same nested structure as `[a b] [c d] [e f]`.
-  

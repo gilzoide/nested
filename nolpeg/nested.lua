@@ -29,7 +29,8 @@ local MATCHING_CLOSING_BLOCK = {
     [TOKEN.OPEN_BRACES] = TOKEN.CLOSE_BRACES,
 }
 -- Each function returns token, advance
-local lexical_scanners = {
+-- Quotes error if not closed properly
+local LEXICAL_SCANNERS = {
     SPACE = function(s)
         local pos = s:match('[ ,;\t\r]+()')
         return TOKEN.SPACE, pos
@@ -57,7 +58,7 @@ local lexical_scanners = {
                 return table.concat(components), pos + 1
             end
         end
-        return nil, string.format('Unmatched closing %q', delimiter)
+        error(string.format('Unmatched closing %q', delimiter), 0)
     end,
     TEXT = function(s)
         return s:match('([^ ,\t\r\n%[%]():;]+)()')
@@ -68,15 +69,16 @@ local function peek_token_type_name(s)
     local prefix = s:sub(1, 1)
     return TOKEN_BY_PREFIX[prefix] or 'TEXT'
 end
---- Read the next token 
--- @return Token and `s` without it on success
--- @return nil and error message on error (when opening quotes without closing)
-local function next_token(s)
+
+local function read_next_token(s)
     local rule = peek_token_type_name(s)
-    return lexical_scanners[rule](s)
+    return LEXICAL_SCANNERS[rule](s)
 end
 
-local function readable_token(t) return type(t) == 'number' and TOKEN[t] or t end
+local function token_description(t)
+    -- TODO: more user friendly token description
+    return type(t) == 'number' and TOKEN[t] or t
+end
 
 local Parser = {}
 Parser.__index = Parser
@@ -100,10 +102,8 @@ function Parser:read_block(s, expected_closing)
     local toplevel, key, token, previous_token, advance
     repeat
         previous_token = token
-        token, advance = next_token(s)
-        if token == nil then
-            error(advance, 0)
-        elseif type(token) == 'string' then
+        token, advance = read_next_token(s)
+        if type(token) == 'string' then
             if key or peek_token_type_name(s:sub(advance)) ~= 'KEYVALUE' then
                 block[key or #block + 1], key = token, nil
             else
@@ -112,24 +112,22 @@ function Parser:read_block(s, expected_closing)
         elseif token == TOKEN.NEWLINE then
             self.line = self.line + 1
             self.column = 0 -- after advance, column will be 1
-        elseif token == expected_closing then
-            -- block closed correctly, advance `s` and break normally
-        elseif token == TOKEN.EOF or token == TOKEN.CLOSE_BRACKETS or token == TOKEN.CLOSE_PAREN or token == TOKEN.CLOSE_BRACES then
-            error(string.format('Expected closing block with %s, but found %s', readable_token(expected_closing), readable_token(token)), 0)
+        elseif token ~= expected_closing and (token == TOKEN.EOF or token == TOKEN.CLOSE_BRACKETS or token == TOKEN.CLOSE_PAREN or token == TOKEN.CLOSE_BRACES) then
+            error(string.format('Expected closing block with %s, but found %s', token_description(expected_closing), token_description(token)), 0)
         elseif token == TOKEN.OPEN_BRACKETS or token == TOKEN.OPEN_PAREN or token == TOKEN.OPEN_BRACES then
             local child_block, read_length = self:read_block(s:sub(advance), MATCHING_CLOSING_BLOCK[token])
             block[key or #block + 1], key = child_block, nil
             advance = advance + read_length
         elseif token == TOKEN.KEYVALUE then
             if type(previous_token) ~= 'string' then
-                error(string.format('Key-value mapping must appear right after text, found %s instead', readable_token(previous_token)), 0)
+                error(string.format('Key-value mapping must appear right after text, found %s instead', token_description(previous_token)), 0)
             end
         elseif token == TOKEN.SIBLING_DELIMITER then
             if toplevel == nil then toplevel = { block } end
             block = {}
             toplevel[#toplevel + 1] = block
         else
-            assert(token == TOKEN.SPACE or token == TOKEN.COMMENT, 'FIXME!!!') -- TODO: after thorough testing, remove unecessary assertion
+            assert(token == expected_closing or token == TOKEN.SPACE or token == TOKEN.COMMENT, 'FIXME!!!') -- TODO: after thorough testing, remove unecessary assertion
         end
         s = s:sub(advance)
         self.column = self.column + advance - 1
