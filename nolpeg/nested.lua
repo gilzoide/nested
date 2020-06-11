@@ -80,23 +80,7 @@ local function token_description(t)
     return type(t) == 'number' and TOKEN[t] or t
 end
 
-local Parser = {}
-Parser.__index = Parser
-
-function Parser.new()
-    return setmetatable({}, Parser)
-end
-
-function Parser:match(s)
-    self.text = s
-    self.line, self.column = 1, 1
-    local success, result = pcall(self.read_block, self, s, TOKEN.EOF)
-    if not success then return nil, string.format('Error at line %u (col %u): %s', self.line, self.column, result)
-    else return result 
-    end
-end
-
-function Parser:read_block(s, expected_closing)
+local function read_block(state, s, expected_closing)
     local block = {}
     local initial_length = #s
     local toplevel, key, token, previous_token, advance
@@ -110,12 +94,12 @@ function Parser:read_block(s, expected_closing)
                 key = token
             end
         elseif token == TOKEN.NEWLINE then
-            self.line = self.line + 1
-            self.column = 0 -- after advance, column will be 1
+            state.line = state.line + 1
+            state.column = 0 -- after advance, column will be 1
         elseif token ~= expected_closing and (token == TOKEN.EOF or token == TOKEN.CLOSE_BRACKETS or token == TOKEN.CLOSE_PAREN or token == TOKEN.CLOSE_BRACES) then
             error(string.format('Expected closing block with %s, but found %s', token_description(expected_closing), token_description(token)), 0)
         elseif token == TOKEN.OPEN_BRACKETS or token == TOKEN.OPEN_PAREN or token == TOKEN.OPEN_BRACES then
-            local child_block, read_length = self:read_block(s:sub(advance), MATCHING_CLOSING_BLOCK[token])
+            local child_block, read_length = read_block(state, s:sub(advance), MATCHING_CLOSING_BLOCK[token])
             block[key or #block + 1], key = child_block, nil
             advance = advance + read_length
         elseif token == TOKEN.KEYVALUE then
@@ -130,18 +114,74 @@ function Parser:read_block(s, expected_closing)
             assert(token == expected_closing or token == TOKEN.SPACE or token == TOKEN.COMMENT, 'FIXME!!!') -- TODO: after thorough testing, remove unecessary assertion
         end
         s = s:sub(advance)
-        self.column = self.column + advance - 1
+        state.column = state.column + advance - 1
     until token == expected_closing
     return toplevel or block, initial_length - #s
+end
+
+local function decode(s)
+    local state = { line = 1, column = 1 }
+    local success, result = pcall(read_block, state, s, TOKEN.EOF)
+    if not success then return nil, string.format('Error at line %u (col %u): %s', state.line, state.column, result)
+    else return result 
+    end
+end
+
+--- Metadata iterator
+local function knext(t, index)
+    local value
+    repeat index, value = next(t, index) until type(index) ~= 'number'
+    return index, value
+end
+
+local function kpairs(t)
+    return knext, t, nil
+end
+
+--- Dump
+local function encode(t, tight)
+    if type(t) == 'table' then
+        local result = {}
+        local function append(v) result[#result + 1] = v end
+        for i, v in ipairs(t) do
+            local encoded_value = encode(v, tight)
+            if type(v) == 'table' then
+                if tight and result[#result] == ' ' then result[#result] = nil end
+                if result[#result] == ']' then
+                    result[#result] = ';'
+                else
+                    append('[')
+                end
+                append(encoded_value)
+                append(']')
+            else
+                append(encoded_value)
+            end
+            if not tight or result[#result] ~= ']' then append(' ') end
+        end
+        for k, v in kpairs(t) do
+            append(encode(k) .. ':')
+            if not tight then append(' ') end
+            append(encode(v))
+            append(' ')
+        end
+        if result[#result] == ' ' then result[#result] = nil end
+        return table.concat(result)
+    else
+        local encoded_value = tostring(t)
+        if encoded_value:match('[ ,\t\r\n%[%]():;]') or encoded_value:match('^[\'\"`#]') then
+            -- TODO: if tight, find out the quotation mark that requires less escaping
+            encoded_value = '"' .. encoded_value:gsub('"', '""') .. '"'
+        end
+        return encoded_value
+    end
 end
 
 --- Module handler
 local nested = {}
 
-nested.Parser = Parser
-
-function nested.match(...)
-    return Parser.new():match(...)
-end
+nested.metadata = kpairs
+nested.decode = decode
+nested.encode = encode
 
 return nested
