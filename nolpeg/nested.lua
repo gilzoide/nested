@@ -1,6 +1,7 @@
 -- Ignore: blank ,\t\r
 -- Always special: \n()[]:;
 -- Special if first in token: '"`#
+----------  Decoder  ----------
 local TOKEN = {
     'SPACE', 'COMMENT', 'NEWLINE', 'EOF',
     'OPEN_BRACKETS', 'CLOSE_BRACKETS',
@@ -111,7 +112,8 @@ local function read_block(state, s, expected_closing)
             block = {}
             toplevel[#toplevel + 1] = block
         else
-            assert(token == expected_closing or token == TOKEN.SPACE or token == TOKEN.COMMENT, 'FIXME!!!') -- TODO: after thorough testing, remove unecessary assertion
+             -- TODO: after thorough testing, remove unecessary assertion
+            assert(token == expected_closing or token == TOKEN.SPACE or token == TOKEN.COMMENT, 'FIXME!!!')
         end
         s = s:sub(advance)
         state.column = state.column + advance - 1
@@ -119,6 +121,7 @@ local function read_block(state, s, expected_closing)
     return toplevel or block, initial_length - #s
 end
 
+--- TODO: support streamed IO, add value filters to apply in text values
 local function decode(s)
     local state = { line = 1, column = 1 }
     local success, result = pcall(read_block, state, s, TOKEN.EOF)
@@ -127,7 +130,15 @@ local function decode(s)
     end
 end
 
---- Metadata iterator
+local function decode_file(filename)
+    local f, err, code = io.open(filename)
+    if not f then return nil, err, code end
+    local contents = f:read('*a')
+    f:close()
+    return decode(contents)
+end
+
+----------  Metadata iterator  ----------
 local function knext(t, index)
     local value
     repeat index, value = next(t, index) until type(index) ~= 'number'
@@ -138,9 +149,10 @@ local function kpairs(t)
     return knext, t, nil
 end
 
---- Dump
+----------  Encoder  ----------
 local function encode(t, compact)
     if type(t) == 'table' then
+        -- TODO: detect cycles
         local result = {}
         local function append(v) result[#result + 1] = v end
         for i, v in ipairs(t) do
@@ -160,6 +172,7 @@ local function encode(t, compact)
             if not compact or result[#result] ~= ']' then append(' ') end
         end
         for k, v in kpairs(t) do
+            -- TODO: error if k is table
             append(encode(k) .. ':')
             if not compact then append(' ') end
             append(encode(v))
@@ -177,11 +190,23 @@ local function encode(t, compact)
     end
 end
 
+local function encode_to_file(t, filename)
+    local encoded_value, err = encode(t)
+    if not encoded_value then return nil, err end
+    local f, err, code = io.open(filename, 'w')
+    if not f then return nil, err, code end
+    f, err = f:write(encoded_value)
+    f:close()
+    return f, err
+end
+
 --- Module handler
 local nested = {}
 
 nested.metadata = kpairs
 nested.decode = decode
+nested.decode_file = decode_file
 nested.encode = encode
+nested.encode_to_file = encode_to_file
 
 return nested
