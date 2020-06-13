@@ -161,15 +161,22 @@ local function knext(t, index)
 end
 
 -- with saved key order
-local function saved_order_next(t, index)
-    index = index or 1
-    local key = t[SAVED_KEY_ORDER_KEY][index]
-    return index + 1, t[key]
+local function create_ordered_key_iterator(t)
+    local i = 0
+    local keys = t[SAVED_KEY_ORDER_KEY]
+    return function()
+        i = i + 1
+        local idx = keys[i]
+        return idx, t[idx]
+    end
 end
 
 local function metadata(t)
-    local iterator = t[SAVED_KEY_ORDER_KEY] and saved_order_next or knext
-    return iterator, t, nil
+    if t[SAVED_KEY_ORDER_KEY] then
+        return create_ordered_key_iterator(t)
+    else
+        return knext, t, nil
+    end
 end
 
 ----------  Encoder  ----------
