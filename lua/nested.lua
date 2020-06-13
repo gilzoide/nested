@@ -66,6 +66,9 @@ local LEXICAL_SCANNERS = {
     end,
 }
 
+local OPTION_ORDERED = 'ordered'
+local SAVED_KEY_ORDER_KEY = '__nested_keys'
+
 local function peek_token_type_name(s)
     local prefix = s:sub(1, 1)
     return TOKEN_BY_PREFIX[prefix] or 'TEXT'
@@ -95,6 +98,14 @@ local function read_block(state, s, expected_closing)
                 block[key or #block + 1], key = value, nil
             else
                 key = token
+                if state[OPTION_ORDERED] then
+                    local saved_key_order = block[SAVED_KEY_ORDER_KEY]
+                    if saved_key_order == nil then
+                        block[SAVED_KEY_ORDER_KEY] = { key }
+                    else
+                        saved_key_order[#saved_key_order + 1] = key
+                    end
+                end
             end
         elseif token == TOKEN.NEWLINE then
             state.line = state.line + 1
@@ -124,8 +135,8 @@ local function read_block(state, s, expected_closing)
 end
 
 --- TODO: support streamed IO
-local function decode(s, text_filter)
-    local state = { line = 1, column = 1, text_filter = text_filter }
+local function decode(s, text_filter, ordered)
+    local state = { line = 1, column = 1, text_filter = text_filter, [OPTION_ORDERED] = ordered }
     local success, result = pcall(read_block, state, s, TOKEN.EOF)
     if not success then return nil, string.format('Error at line %u (col %u): %s', state.line, state.column, result)
     else return result 
@@ -142,14 +153,23 @@ local function decode_file(stream, ...)
 end
 
 ----------  Metadata iterator  ----------
+-- without saved key order
 local function knext(t, index)
     local value
     repeat index, value = next(t, index) until type(index) ~= 'number'
     return index, value
 end
 
-local function kpairs(t)
-    return knext, t, nil
+-- with saved key order
+local function saved_order_next(t, index)
+    index = index or 1
+    local key = t[SAVED_KEY_ORDER_KEY][index]
+    return index + 1, t[key]
+end
+
+local function metadata(t)
+    local iterator = t[SAVED_KEY_ORDER_KEY] and saved_order_next or knext
+    return iterator, t, nil
 end
 
 ----------  Encoder  ----------
@@ -217,7 +237,7 @@ return {
     decode_file = decode_file,
     encode = encode,
     encode_to_file = encode_to_file,
-    metadata = kpairs,
+    metadata = metadata,
     bool_number_filter = bool_number_filter,
 }
 
