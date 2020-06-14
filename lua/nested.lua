@@ -179,44 +179,70 @@ local function metadata(t)
     end
 end
 
+----------  Keypaths  ----------
+local function get(t, keypath, ...)
+    if type(keypath) ~= 'table' then keypath = { keypath, ...} end
+    for i = 1, #keypath do
+        local ttype = type(t)
+        if ttype ~= 'table' then
+            return nil, string.format("Cannot index %s at keypath %q", ttype, table.concat(keypath, ' ', 1, i - 1))
+        end
+        t = t[keypath[i]]
+    end
+    return t
+end
+
 ----------  Encoder  ----------
-local function encode(t, compact)
+local function encode_into(state, t)
+    local function append(v) state[#state + 1] = v end
     if type(t) == 'table' then
-        -- TODO: detect cycles
-        local result = {}
-        local function append(v) result[#result + 1] = v end
+        local keypath = state.keypath
+        assert(state[t] == nil, string.format("Cycle detected at keypath %q", table.concat(keypath, ' ')))
+        state[t] = true
+        local compact = state.compact
+        if compact and state[#state] == ' ' then state[#state] = nil end
+        if state[#state] == ']' then
+            state[#state] = ';'
+        else
+            append('[')
+        end
         for i, v in ipairs(t) do
-            local encoded_value = encode(v, compact)
-            if type(v) == 'table' then
-                if compact and result[#result] == ' ' then result[#result] = nil end
-                if result[#result] == ']' then
-                    result[#result] = ';'
-                else
-                    append('[')
-                end
-                append(encoded_value)
-                append(']')
-            else
-                append(encoded_value)
-            end
-            if not compact or result[#result] ~= ']' then append(' ') end
+            keypath[#keypath + 1] = i
+            encode_into(state, v)
+            if not compact or state[#state] ~= ']' then append(' ') end
+            keypath[#keypath] = nil
         end
         for k, v in metadata(t) do
             -- TODO: error if k is table
-            append(encode(k) .. ':')
+            keypath[#keypath + 1] = k
+            encode_into(state, k)
+            append(':')
             if not compact then append(' ') end
-            append(encode(v))
+            encode_into(state, v)
             append(' ')
+            keypath[#keypath] = nil
         end
-        if result[#result] == ' ' then result[#result] = nil end
-        return table.concat(result)
+        if state[#state] == ' ' then state[#state] = nil end
+        append(']')
     else
         local encoded_value = tostring(t)
         if encoded_value:match('[ ,\t\r\n%[%]():;]') or encoded_value:match('^[\'\"`#]') then
             -- TODO: if compact, find out the quotation mark that requires less escaping
             encoded_value = '"' .. encoded_value:gsub('"', '""') .. '"'
         end
-        return encoded_value
+        append(encoded_value)
+    end
+end
+
+local function encode(t, compact)
+    local state = { compact = compact, keypath = {} }
+    local success, err = pcall(encode_into, state, t)
+    if not success then
+        return nil, err
+    else
+        local i = compact and 2 or nil
+        local j = compact and #state - 1 or nil
+        return table.concat(state, '', i, j)
     end
 end
 
@@ -246,6 +272,7 @@ return {
     encode_to_file = encode_to_file,
     metadata = metadata,
     bool_number_filter = bool_number_filter,
+    get = get,
 }
 
 -- TODO: document stuff
