@@ -201,7 +201,7 @@ local function encode(t, compact)
             end
             if not compact or result[#result] ~= ']' then append(' ') end
         end
-        for k, v in kpairs(t) do
+        for k, v in metadata(t) do
             -- TODO: error if k is table
             append(encode(k) .. ':')
             if not compact then append(' ') end
