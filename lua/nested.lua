@@ -192,6 +192,32 @@ local function get(t, keypath, ...)
     return t
 end
 
+----------  Iterators  ----------
+local PREORDER = 'PREORDER'
+local POSTORDER = 'POSTORDER'
+local function iterate_step(keypath, t, include_kv, order)
+    if order == PREORDER then coroutine.yield(keypath, t) end
+    if type(t) == 'table' then
+        local keypath_index = #keypath + 1
+        for i = 1, #t do
+            keypath[keypath_index] = i
+            iterate_step(keypath, t[i], include_kv, order)
+        end
+        if include_kv then
+            for k, v in metadata(t) do
+                keypath[keypath_index] = k
+                iterate_step(keypath, v, include_kv, order)
+            end
+        end
+        keypath[keypath_index] = nil
+    end
+    if order == POSTORDER then coroutine.yield(keypath, t) end
+end
+local function iterate(t, include_kv, order)
+    if order ~= POSTORDER then order = PREORDER end
+    return coroutine.wrap(function() iterate_step({}, t, include_kv, order) end)
+end
+
 ----------  Encoder  ----------
 local function encode_into(state, t)
     local function append(v) state[#state + 1] = v end
@@ -273,6 +299,9 @@ return {
     metadata = metadata,
     bool_number_filter = bool_number_filter,
     get = get,
+    iterate = iterate,
+    PREORDER = PREORDER,
+    POSTORDER = POSTORDER,
 }
 
 -- TODO: document stuff
