@@ -66,9 +66,6 @@ local LEXICAL_SCANNERS = {
     end,
 }
 
-local OPTION_ORDERED = 'ordered'
-local SAVED_KEY_ORDER_KEY = '__nested_keys'
-
 local function peek_token_type_name(s)
     local prefix = s:sub(1, 1)
     return TOKEN_BY_PREFIX[prefix] or 'TEXT'
@@ -85,7 +82,8 @@ local function token_description(t)
 end
 
 local function read_block(state, s, expected_closing)
-    local block = {}
+    local table_constructor = state.table_constructor
+    local block = table_constructor()
     local initial_length = #s
     local toplevel, key, token, previous_token, advance
     repeat
@@ -98,14 +96,6 @@ local function read_block(state, s, expected_closing)
                 block[key or #block + 1], key = value, nil
             else
                 key = token
-                if state[OPTION_ORDERED] then
-                    local saved_key_order = block[SAVED_KEY_ORDER_KEY]
-                    if saved_key_order == nil then
-                        block[SAVED_KEY_ORDER_KEY] = { key }
-                    else
-                        saved_key_order[#saved_key_order + 1] = key
-                    end
-                end
             end
         elseif token == TOKEN.NEWLINE then
             state.line = state.line + 1
@@ -121,8 +111,11 @@ local function read_block(state, s, expected_closing)
                 error(string.format('Key-value mapping must appear right after text, found %s instead', token_description(previous_token)), 0)
             end
         elseif token == TOKEN.SIBLING_DELIMITER then
-            if toplevel == nil then toplevel = { block } end
-            block = {}
+            if toplevel == nil then
+                toplevel = table_constructor()
+                toplevel[1] = block
+            end
+            block = table_constructor()
             toplevel[#toplevel + 1] = block
         else
              -- TODO: after thorough testing, remove unecessary assertion
@@ -135,8 +128,9 @@ local function read_block(state, s, expected_closing)
 end
 
 --- TODO: support streamed IO
-local function decode(s, text_filter, ordered)
-    local state = { line = 1, column = 1, text_filter = text_filter, [OPTION_ORDERED] = ordered }
+local function decode(s, text_filter, table_constructor)
+    table_constructor = table_constructor or function() return {} end
+    local state = { line = 1, column = 1, text_filter = text_filter, table_constructor = table_constructor }
     local success, result = pcall(read_block, state, s, TOKEN.EOF)
     if not success then return nil, string.format('Error at line %u (col %u): %s', state.line, state.column, result)
     else return result 
@@ -153,30 +147,12 @@ local function decode_file(stream, ...)
 end
 
 ----------  Metadata iterator  ----------
--- without saved key order
-local function knext(t, index)
-    local value
-    repeat index, value = next(t, index) until type(index) ~= 'number'
-    return index, value
-end
-
--- with saved key order
-local function create_ordered_key_iterator(t)
-    local i = 0
-    local keys = t[SAVED_KEY_ORDER_KEY]
-    return function()
-        i = i + 1
-        local idx = keys[i]
-        return idx, t[idx]
-    end
-end
-
 local function metadata(t)
-    if t[SAVED_KEY_ORDER_KEY] then
-        return create_ordered_key_iterator(t)
-    else
-        return knext, t, nil
-    end
+    return coroutine.wrap(function()
+        for k, v in pairs(t) do
+            if type(k) ~= 'number' then coroutine.yield(k, v) end
+        end
+    end)
 end
 
 ----------  Keypaths  ----------
