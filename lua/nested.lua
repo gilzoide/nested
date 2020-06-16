@@ -169,29 +169,34 @@ local function get(t, keypath, ...)
 end
 
 ----------  Iterators  ----------
-local PREORDER = 'PREORDER'
-local POSTORDER = 'POSTORDER'
-local function iterate_step(keypath, t, include_kv, order)
-    if order == PREORDER then coroutine.yield(keypath, t) end
-    if type(t) == 'table' then
+local ORDER = 'order'
+local PREORDER = 'preorder'
+local POSTORDER = 'postorder'
+local TABLE_ONLY = 'table_only'
+local INCLUDE_KV = 'include_kv'
+local function iterate_step(keypath, t, options)
+    local is_table = type(t) == 'table'
+    if options[TABLE_ONLY] and not is_table then return end
+    local is_postorder = options[ORDER] == POSTORDER
+    if not is_postorder then coroutine.yield(keypath, t) end
+    if is_table then
         local keypath_index = #keypath + 1
         for i = 1, #t do
             keypath[keypath_index] = i
-            iterate_step(keypath, t[i], include_kv, order)
+            iterate_step(keypath, t[i], options)
         end
-        if include_kv then
+        if options[INCLUDE_KV] then
             for k, v in metadata(t) do
                 keypath[keypath_index] = k
-                iterate_step(keypath, v, include_kv, order)
+                iterate_step(keypath, v, options)
             end
         end
         keypath[keypath_index] = nil
     end
-    if order == POSTORDER then coroutine.yield(keypath, t) end
+    if is_postorder then coroutine.yield(keypath, t) end
 end
-local function iterate(t, include_kv, order)
-    if order ~= POSTORDER then order = PREORDER end
-    return coroutine.wrap(function() iterate_step({}, t, include_kv, order) end)
+local function iterate(t, options)
+    return coroutine.wrap(function() iterate_step({}, t, options) end)
 end
 
 ----------  Encoder  ----------
@@ -276,8 +281,11 @@ return {
     bool_number_filter = bool_number_filter,
     get = get,
     iterate = iterate,
+    ORDER = ORDER,
     PREORDER = PREORDER,
     POSTORDER = POSTORDER,
+    TABLE_ONLY = TABLE_ONLY,
+    INCLUDE_KV = INCLUDE_KV,
 }
 
 -- TODO: document stuff
