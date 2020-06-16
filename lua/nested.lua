@@ -174,30 +174,30 @@ local PREORDER = 'preorder'
 local POSTORDER = 'postorder'
 local TABLE_ONLY = 'table_only'
 local INCLUDE_KV = 'include_kv'
-local function iterate_step(keypath, t, options)
+local function iterate_step(keypath, t, parent, options)
     local is_table = type(t) == 'table'
     if options[TABLE_ONLY] and not is_table then return end
     local is_postorder = options[ORDER] == POSTORDER
-    if not is_postorder then coroutine.yield(keypath, t) end
+    if not is_postorder then coroutine.yield(keypath, t, parent) end
     if is_table then
         local keypath_index = #keypath + 1
         for i = 1, #t do
             keypath[keypath_index] = i
-            iterate_step(keypath, t[i], options)
+            iterate_step(keypath, t[i], t, options)
         end
         if options[INCLUDE_KV] then
             for k, v in metadata(t) do
                 keypath[keypath_index] = k
-                iterate_step(keypath, v, options)
+                iterate_step(keypath, v, t, options)
             end
         end
         keypath[keypath_index] = nil
     end
-    if is_postorder then coroutine.yield(keypath, t) end
+    if is_postorder then coroutine.yield(keypath, t, parent) end
 end
 local function iterate(t, options)
     options = options or {}
-    return coroutine.wrap(function() iterate_step({}, t, options) end)
+    return coroutine.wrap(function() iterate_step({}, t, nil, options) end)
 end
 
 ----------  Encoder  ----------
