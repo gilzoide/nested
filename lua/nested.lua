@@ -196,6 +196,7 @@ local function iterate_step(keypath, t, options)
     if is_postorder then coroutine.yield(keypath, t) end
 end
 local function iterate(t, options)
+    options = options or {}
     return coroutine.wrap(function() iterate_step({}, t, options) end)
 end
 
