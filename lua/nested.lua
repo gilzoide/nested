@@ -156,16 +156,28 @@ local function metadata(t)
 end
 
 ----------  Keypaths  ----------
-local function get(t, keypath, ...)
+local function get_internal(t, create_subtables, keypath, ...)
     if type(keypath) ~= 'table' then keypath = { keypath, ...} end
     for i = 1, #keypath do
         local ttype = type(t)
         if ttype ~= 'table' then
             return nil, string.format("Cannot index %s at keypath %q", ttype, table.concat(keypath, ' ', 1, i - 1))
         end
-        t = t[keypath[i]]
+        local key = keypath[i]
+        local subtable = t[key]
+        if subtable == nil and create_subtables then
+            subtable = {}
+            t[key] = subtable
+        end
+        t = subtable
     end
     return t
+end
+local function get(t, ...)
+    return get_internal(t, false, ...)
+end
+local function get_or_create(t, ...)
+    return get_internal(t, true, ...)
 end
 
 local function set_internal(t, create_subtables, keypath, ...)
@@ -314,6 +326,7 @@ return {
     metadata = metadata,
     bool_number_filter = bool_number_filter,
     get = get,
+    get_or_create = get_or_create,
     set = set,
     set_or_create = set_or_create,
     iterate = iterate,
