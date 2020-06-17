@@ -68,8 +68,16 @@ local function evaluate_step(t, env)
         else
             local have_hash = false
             for k, v in iterate_table(t) do
-                have_hash = have_hash or type(k) ~= 'number'
-                env[k] = evaluate_step(v, env)
+                local key_not_numeric = type(k) ~= 'number'
+                have_hash = have_hash or key_not_numeric
+                v = evaluate_step(v, env)
+                if key_not_numeric then
+                    if nested.set_or_create(env, read_keypath(k), v) == nil then
+                        env[k] = v
+                    end
+                else
+                    env[k] = v
+                end
             end
             if type(env[1]) == 'function' then
                 local f = table.remove(env, 1)
@@ -95,6 +103,7 @@ end
 
 function nested_function.evaluate(t, ...)
     local env = setmetatable({
+        self = t,
         arg = {...}
     }, { __index = _ENV or getfenv() })
     return evaluate_step(t, env)

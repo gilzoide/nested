@@ -11,6 +11,8 @@ f2: [function [
     print 'just print'
 ]]
 
+self.doidera.demais: 5
+
 [print olars a.1 a.2.segundo a a.b]
 [print a.b.c outro: 1]
 [f 1 5 9]
@@ -18,4 +20,4 @@ f2: [function [
 [[function [print 'evaluate now']]]
 ]=], nested.bool_number_filter, nested_function.new))
 
-t()
+print(nested.encode(t()))
