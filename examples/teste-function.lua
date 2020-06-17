@@ -7,9 +7,7 @@ f: [function [x y][
     print OYES x y
 ]]
 
-f2: [function [
-    print 'just print'
-]]
+f2: [function `print 'just print'`]
 
 self.doidera.demais: 5
 

@@ -51,6 +51,19 @@ local function iterate_table(t)
     end
 end
 
+local loadstring_with_env
+if setfenv and loadstring then
+    loadstring_with_env = function(body, env)
+        local chunk, err = loadstring(body)
+        if not chunk then return nil, err end
+        return setfenv(chunk, env)
+    end
+else
+    loadstring_with_env = function(body, env)
+        return load(body, nil, 't', env)
+    end
+end
+
 local function evaluate_step(t, env)
     if type(t) == 'table' then
         env = setmetatable({}, { __index = env })
@@ -63,7 +76,13 @@ local function evaluate_step(t, env)
                         env[arguments[i]] = select(i, ...)
                     end
                 end
-                return evaluate_step(body, env)
+                if type(body) == 'string' then
+                    local chunk, err = loadstring_with_env(body, env)
+                    if not chunk then return nil, err end
+                    return chunk()
+                else
+                    return evaluate_step(body, env)
+                end
             end
         else
             local have_hash = false
