@@ -1,4 +1,5 @@
 local nested = require 'nested'
+local unpack = unpack or table.unpack
 
 local nested_function = {}
 nested_function.__index = nested_function
@@ -23,7 +24,7 @@ local function read_keypath(s)
     local result = {}
     while true do
         local pattern_first, pattern_last = s:find(KEYPATH_PATTERN)
-        if not pattern_first or pattern_first == 1 then break end
+        if not pattern_first then break end
         local key = s:sub(1, pattern_first - 1)
         result[#result + 1] = tonumber(key) or key
         s = s:sub(pattern_last + 1)
@@ -31,8 +32,6 @@ local function read_keypath(s)
     result[#result + 1] = tonumber(s) or s
     return result
 end
-
-local unpack = unpack or table.unpack
 
 local function iterate_nested_function(t)
     local i = 0
@@ -95,7 +94,7 @@ local function evaluate_step(t, env)
 end
 
 function nested_function.evaluate(t, ...)
-    env = setmetatable({
+    local env = setmetatable({
         arg = {...}
     }, { __index = _ENV or getfenv() })
     return evaluate_step(t, env)
