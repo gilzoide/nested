@@ -155,64 +155,6 @@ local function metadata(t)
     end)
 end
 
-----------  Keypaths  ----------
-local function get_internal(t, create_subtables, keypath, ...)
-    if type(keypath) ~= 'table' then keypath = { keypath, ...} end
-    for i = 1, #keypath do
-        local ttype = type(t)
-        if ttype ~= 'table' then
-            return nil, string.format("Cannot index %s at keypath %q", ttype, table.concat(keypath, ' ', 1, i - 1))
-        end
-        local key = keypath[i]
-        local subtable = t[key]
-        if subtable == nil and create_subtables then
-            subtable = {}
-            t[key] = subtable
-        end
-        t = subtable
-    end
-    return t
-end
-local function get(t, ...)
-    return get_internal(t, false, ...)
-end
-local function get_or_create(t, ...)
-    return get_internal(t, true, ...)
-end
-
-local function set_internal(t, create_subtables, keypath, ...)
-    local value
-    if type(keypath) ~= 'table' then
-        keypath = { keypath, ...}
-        value = table.remove(keypath)
-    else
-        value = ...
-    end
-    local subtable, key = t, nil
-    for i = 1, #keypath - 1 do
-        key = keypath[i]
-        local next_subtable = subtable[key]
-        if next_subtable == nil and create_subtables then
-            next_subtable = {}
-            subtable[key] = next_subtable
-        end
-        local ttype = type(next_subtable)
-        if ttype ~= 'table' then
-            return nil, string.format("Cannot index %s at keypath %q", ttype, table.concat(keypath, ' ', 1, i))
-        end
-        subtable = next_subtable
-    end
-    key = keypath[#keypath]
-    subtable[key] = value
-    return t
-end
-local function set(t, ...)
-    return set_internal(t, false, ...)
-end
-local function set_or_create(t, ...)
-    return set_internal(t, true, ...)
-end
-
 ----------  Iterators  ----------
 local ORDER = 'order'
 local PREORDER = 'preorder'
@@ -307,6 +249,71 @@ local function encode_to_file(stream, ...)
     stream:write(encoded_value)
     stream:close()
     return true
+end
+
+----------  Keypaths  ----------
+local function get_internal(t, create_subtables, keypath, ...)
+    if type(keypath) ~= 'table' then keypath = { keypath, ...} end
+    for i = 1, #keypath do
+        local key = keypath[i]
+        local ttype = type(t)
+        if ttype ~= 'table' then
+            keypath[i] = nil
+            local keypath_with_error = encode(keypath)
+            keypath[i] = key
+            return nil, string.format("Cannot index %s at keypath %s", ttype, keypath_with_error)
+        end
+        
+        local subtable = t[key]
+        if subtable == nil and create_subtables then
+            subtable = {}
+            t[key] = subtable
+        end
+        t = subtable
+    end
+    return t
+end
+local function get(t, ...)
+    return get_internal(t, false, ...)
+end
+local function get_or_create(t, ...)
+    return get_internal(t, true, ...)
+end
+
+local function set_internal(t, create_subtables, keypath, ...)
+    local value
+    if type(keypath) ~= 'table' then
+        keypath = { keypath, ...}
+        value = table.remove(keypath)
+    else
+        value = ...
+    end
+    local subtable, key = t, nil
+    for i = 1, #keypath - 1 do
+        key = keypath[i]
+        local next_subtable = subtable[key]
+        if next_subtable == nil and create_subtables then
+            next_subtable = {}
+            subtable[key] = next_subtable
+        end
+        local ttype = type(next_subtable)
+        if ttype ~= 'table' then
+            key, keypath[i + 1] = keypath[i + 1], nil
+            local keypath_with_error = encode(keypath)
+            keypath[i + 1] = key
+            return nil, string.format("Cannot index %s at keypath %s", ttype, keypath_with_error)
+        end
+        subtable = next_subtable
+    end
+    key = keypath[#keypath]
+    subtable[key] = value
+    return t
+end
+local function set(t, ...)
+    return set_internal(t, false, ...)
+end
+local function set_or_create(t, ...)
+    return set_internal(t, true, ...)
 end
 
 ----------  Filter  ----------
