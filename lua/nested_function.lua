@@ -5,7 +5,7 @@ local nested_function = {}
 nested_function.__index = nested_function
 
 local ORDERED_KEY = '__nested_function_order'
-local ESCAPE_CHAR = '!'
+local ESCAPE_CHAR = '\\'
 local KEYPATH_PATTERN = '%.'
 
 function nested_function.new()
@@ -42,6 +42,7 @@ local function iterate_nested_function(t)
         return idx, t[idx]
     end
 end
+nested_function.__pairs = iterate_nested_function
 
 local function iterate_table(t)
     if t[ORDERED_KEY] then
@@ -91,8 +92,12 @@ local function evaluate_step(t, env)
                 have_hash = have_hash or key_not_numeric
                 v = evaluate_step(v, env)
                 if key_not_numeric then
-                    if nested.set_or_create(env, read_keypath(k), v) == nil then
-                        env[k] = v
+                    if k:sub(1, 1) == ESCAPE_CHAR then
+                        env[k:sub(2)] = v
+                    else
+                        if nested.set_or_create(env, read_keypath(k), v) == nil then
+                            env[k] = v
+                        end
                     end
                 else
                     env[k] = v
@@ -120,11 +125,10 @@ local function evaluate_step(t, env)
     end
 end
 
-function nested_function.evaluate(t, ...)
+function nested_function.evaluate(t, fenv, ...)
     local env = setmetatable({
-        self = t,
         arg = {...}
-    }, { __index = _ENV or getfenv() })
+    }, { __index = fenv or _ENV or getfenv() })
     return evaluate_step(t, env)
 end
 nested_function.__call = nested_function.evaluate
