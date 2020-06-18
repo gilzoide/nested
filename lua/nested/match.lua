@@ -15,10 +15,15 @@ local function match(t, pattern)
     for k, v in pairs(pattern) do
         ktype = type(k)
         if ktype == 'number' then
-            local invert = v:sub(1, 1) == NOT_PREFIX
-            if invert then v = v:sub(2) end
-            keypath = nested_keypath.match(v)
-            if not xor(invert, nested.get(t, keypath)) then return false end
+            local callable, result = pcall(v, t)
+            if callable then
+                if not result then return false end
+            else
+                local invert = v:sub(1, 1) == NOT_PREFIX
+                if invert then v = v:sub(2) end
+                keypath = nested_keypath.match(v)
+                if not xor(invert, nested.get(t, keypath)) then return false end
+            end
         else
             local invert = k:sub(1, 1) == NOT_PREFIX
             if invert then k = k:sub(2) end

@@ -23,6 +23,7 @@ c.h.but-this: [function true]
 c.g: [> 100]
 !b: [> 100]
 !c.non-existent
+[function(t) `return #t == 0 and t.a > 2`]
 ]=], nested.bool_number_filter, nested_function.new)
 
 pattern = pattern({
