@@ -16,12 +16,14 @@ c: [
 
 ]=], nested.bool_number_filter)
 
-local pattern = nested.decode([[
+local pattern = nested.decode([=[
 a
 c.1
 c.h.but-this: [function true]
 c.g: [> 100]
-]], nested.bool_number_filter, nested_function.new)
+!b: [> 100]
+!c.non-existent
+]=], nested.bool_number_filter, nested_function.new)
 
 pattern = pattern({
     ['>'] = function(const)
