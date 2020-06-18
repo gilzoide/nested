@@ -1,5 +1,5 @@
 nested = require 'nested'
-local nested_function = require 'nested_function'
+local nested_function = require 'nested.function'
 
 a = { 1, { segundo = 2 }, 3, b = 'b' }
 local t = assert(nested.decode([=[

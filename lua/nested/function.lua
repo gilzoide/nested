@@ -1,12 +1,17 @@
 local nested = require 'nested'
+local nested_keypath = require 'nested.keypath'
 local unpack = unpack or table.unpack
 
 local nested_function = {}
 nested_function.__index = nested_function
 
 local ORDERED_KEY = '__nested_function_order'
-local ESCAPE_CHAR = '\\'
-local KEYPATH_PATTERN = '%.'
+nested_function.escape_char = '\\'
+nested_function.keypath_pattern = '%.'
+
+local function read_keypath(s)
+    return nested_keypath.match(s, nested_function.keypath_pattern, nested_function.escape_char)
+end
 
 function nested_function.new()
     return setmetatable({
@@ -18,19 +23,6 @@ function nested_function.__newindex(t, index, value)
     local order = rawget(t, ORDERED_KEY)
     order[#order + 1] = index
     rawset(t, index, value)
-end
-
-local function read_keypath(s)
-    local result = {}
-    while true do
-        local pattern_first, pattern_last = s:find(KEYPATH_PATTERN)
-        if not pattern_first then break end
-        local key = s:sub(1, pattern_first - 1)
-        result[#result + 1] = tonumber(key) or key
-        s = s:sub(pattern_last + 1)
-    end
-    result[#result + 1] = tonumber(s) or s
-    return result
 end
 
 local function iterate_nested_function(t)
@@ -92,12 +84,8 @@ local function evaluate_step(t, env)
                 have_hash = have_hash or key_not_numeric
                 v = evaluate_step(v, env)
                 if key_not_numeric then
-                    if k:sub(1, 1) == ESCAPE_CHAR then
-                        env[k:sub(2)] = v
-                    else
-                        if nested.set_or_create(env, read_keypath(k), v) == nil then
-                            env[k] = v
-                        end
+                    if nested.set_or_create(env, read_keypath(k), v) == nil then
+                        env[k] = v
                     end
                 else
                     env[k] = v
@@ -115,8 +103,9 @@ local function evaluate_step(t, env)
             end
         end
     elseif type(t) == 'string' then
-        if t:sub(1, 1) == ESCAPE_CHAR then
-            return t:sub(2)
+        local escape_length = #nested_function.escape_char
+        if t:sub(1, escape_length) == nested_function.escape_char then
+            return t:sub(escape_length + 1)
         else
             return nested.get(env, read_keypath(t)) or t
         end
