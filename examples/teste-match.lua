@@ -34,4 +34,9 @@ pattern = pattern({
     end,
 })
 print(nested.encode(pattern))
-print(nested_match(t, pattern))
+assert(nested_match(t, pattern))
+assert(nested_match(t, {
+    {'c', 'h', 'is'},
+    'c.h.is',
+    function(t) return nested.get(t, 'c', 'h', 'is') end,
+}))

@@ -10,42 +10,44 @@ local function xor(a, b)
     return truthy(a) ~= truthy(b)
 end
 
+local function keypath_invert(v)
+    if type(v) == 'string' then
+        local invert = v:sub(1, 1) == NOT_PREFIX
+        if invert then v = v:sub(2) end
+        return nested_keypath.match(v), invert
+    else
+        return v, false
+    end 
+end
+
 local function match(t, pattern)
-    local ktype, keypath, value_in_t
+    local call_success, invert, ktype, keypath, result, value_in_t
     for k, v in pairs(pattern) do
         ktype = type(k)
         if ktype == 'number' then
-            local callable, result = pcall(v, t)
-            if callable then
-                if not result then return false end
-            else
-                local invert = v:sub(1, 1) == NOT_PREFIX
-                if invert then v = v:sub(2) end
-                keypath = nested_keypath.match(v)
-                if not xor(invert, nested.get(t, keypath)) then return false end
+            call_success, result = pcall(v, t)
+            if not call_success then
+                keypath, invert = keypath_invert(v)
+                result = xor(invert, nested.get(t, keypath))
             end
         else
-            local invert = k:sub(1, 1) == NOT_PREFIX
-            if invert then k = k:sub(2) end
-            if ktype == 'string' then
-                keypath = nested_keypath.match(k)
-            else
-                keypath = k
-            end
+            keypath, invert = keypath_invert(k)
             value_in_t = nested.get(t, keypath)
             if value_in_t == nil then
-                if not invert then return false end
+                result = false
             else
-                local callable, result = pcall(v, value_in_t)
-                if callable then
-                    if not xor(invert, result) then return false end
-                elseif type(v) == 'table' then
-                    if not xor(invert, match(value_in_t, v)) then return false end
-                else
-                    if not xor(invert, v == value_in_t) then return false end
+                call_success, result = pcall(v, value_in_t)
+                if not call_success then
+                    if type(v) == 'table' then
+                        result = match(value_in_t, v)
+                    else
+                        result = v == value_in_t
+                    end
                 end
             end
+            result = xor(invert, result)
         end
+        if not result then return false end
     end
 
     return true
