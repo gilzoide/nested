@@ -1,5 +1,5 @@
 -- Ignore: blank ,\t\r
--- Always special: \n()[]:;
+-- Always special: \n()[]{}:;
 -- Special if first in token: '"`#
 ----------  Decoder  ----------
 local TOKEN = {
@@ -85,11 +85,7 @@ end
 local function token_description(t)
     if type(t) == 'number' then
         local description = TOKEN_DESCRIPTION[t]
-        if description then
-            return string.format("%q", description)
-        else
-            return TOKEN[t]
-        end
+        return description and string.format("%q", description) or TOKEN[t]
     else
         return t
     end
@@ -162,8 +158,8 @@ local function decode_file(stream, ...)
     return decode(contents, ...)
 end
 
-----------  Metadata iterator  ----------
-local function metadata(t)
+----------  Non numeric pairs iterator  ----------
+local function kpairs(t)
     return coroutine.wrap(function()
         for k, v in pairs(t) do
             if type(k) ~= 'number' then coroutine.yield(k, v) end
@@ -189,7 +185,7 @@ local function iterate_step(keypath, t, parent, options)
             iterate_step(keypath, t[i], t, options)
         end
         if options[INCLUDE_KV] then
-            for k, v in metadata(t) do
+            for k, v in kpairs(t) do
                 keypath[keypath_index] = k
                 iterate_step(keypath, v, t, options)
             end
@@ -224,7 +220,7 @@ local function encode_into(state, t)
             if not compact or state[#state] ~= ']' then append(' ') end
             keypath[#keypath] = nil
         end
-        for k, v in metadata(t) do
+        for k, v in kpairs(t) do
             -- TODO: error if k is table
             keypath[#keypath + 1] = k
             encode_into(state, k)
@@ -258,8 +254,8 @@ encode = function(t, compact)
     end
 end
 
-local function encode_to_file(stream, ...)
-    local encoded_value, err = encode(...)
+local function encode_to_file(t, stream, ...)
+    local encoded_value, err = encode(t, ...)
     if not encoded_value then return nil, err end
     local previous = io.output()
     stream = io.output(stream)
@@ -349,16 +345,12 @@ end
 
 ----------  Module  ----------
 return {
-    decode = decode,
-    decode_file = decode_file,
-    encode = encode,
-    encode_to_file = encode_to_file,
-    metadata = metadata,
+    decode = decode, decode_file = decode_file,
+    encode = encode, encode_to_file = encode_to_file,
+    kpairs = kpairs,
     bool_number_filter = bool_number_filter,
-    get = get,
-    get_or_create = get_or_create,
-    set = set,
-    set_or_create = set_or_create,
+    get = get, get_or_create = get_or_create,
+    set = set, set_or_create = set_or_create,
     iterate = iterate,
     ORDER = ORDER,
     PREORDER = PREORDER,

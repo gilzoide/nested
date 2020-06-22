@@ -21,5 +21,5 @@ if args.table then
     local ret = args.tight and 'return' or 'return '
     args.output:write(ret .. pretty.write(contents, args.tight and ''))
 else
-    assert(nested.encode_to_file(args.output, contents, args.tight))
+    assert(nested.encode_to_file(contents, args.output, args.tight))
 end
