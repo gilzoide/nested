@@ -62,7 +62,7 @@ local LEXICAL_SCANNERS = {
         error(string.format('Unmatched closing %q', delimiter), 0)
     end,
     TEXT = function(s)
-        return s:match('([^ ,\t\r\n%[%]():;]+)()')
+        return s:match('([^ ,\t\r\n%[%](){}:;]+)()')
     end,
 }
 
