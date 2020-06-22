@@ -56,7 +56,7 @@ local LEXICAL_SCANNERS = {
         for m, pos in s:sub(2):gmatch('([^' .. delimiter .. ']*' .. delimiter .. '?)' .. delimiter .. '()') do -- ([^']*'?)'()
             components[#components + 1] = m
             if m:sub(-1) ~= delimiter then
-                return table.concat(components), pos + 1
+                return table.concat(components), pos + 1, delimiter
             end
         end
         error(string.format('Unmatched closing %q', delimiter), 0)
@@ -85,13 +85,13 @@ local function read_block(state, s, expected_closing)
     local table_constructor = state.table_constructor
     local block = table_constructor()
     local initial_length = #s
-    local toplevel, key, token, previous_token, advance
+    local toplevel, key, token, previous_token, advance, quotation_mark
     repeat
         previous_token = token
-        token, advance = read_next_token(s)
+        token, advance, quotation_mark = read_next_token(s)
         if type(token) == 'string' then
             if key or peek_token_type_name(s:sub(advance)) ~= 'KEYVALUE' then
-                local value = state.text_filter and state.text_filter(token)
+                local value = state.text_filter and state.text_filter(token, quotation_mark)
                 if value == nil then value = token end
                 block[key or #block + 1], key = value, nil
             else
@@ -317,8 +317,9 @@ local function set_or_create(t, ...)
 end
 
 ----------  Filter  ----------
-local function bool_number_filter(s)
-    if s == 'true' then return true
+local function bool_number_filter(s, quoted)
+    if quoted then return nil
+    elseif s == 'true' then return true
     elseif s == 'false' then return false
     else return tonumber(s)
     end

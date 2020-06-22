@@ -2,7 +2,7 @@ local nested = require 'nested'
 
 local text = [[
 Tank t
-    x: 10 y: 20 z: 50
+    x: '10' y: 20 z: `50`
 ;
 
 Tank-'t2'
@@ -14,8 +14,9 @@ Tank-'t2'
 
 a; b; c
 ]]
-local result = assert(nested.decode(text))
-print(nested.encode(result, false))
+local result = assert(nested.decode(text, nested.bool_number_filter))
+print(string.format("%q %q %q", result[1].x, result[1].y, result[1].z))
+print(nested.encode(result))
 --[[
 -- regular
 [Tank t x: 10 y: 20 z: 50] [Tank-'t2' [1 2 3] [3 2 1] x: t.x y: t.y z: t.z] [a] [b] [c]
