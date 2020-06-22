@@ -57,7 +57,7 @@ local LEXICAL_SCANNERS = {
     KEYVALUE = function(s) return TOKEN.KEYVALUE, 2 end,
     SIBLING_DELIMITER = function(s) return TOKEN.SIBLING_DELIMITER, 2 end,
     QUOTES = function(s)
-        local delimiter = s:match('[\'\"`]')
+        local delimiter = s:sub(1, 1)
         local components = {}
         for m, pos in s:sub(2):gmatch('([^' .. delimiter .. ']*' .. delimiter .. '?)' .. delimiter .. '()') do -- ([^']*'?)'()
             components[#components + 1] = m
