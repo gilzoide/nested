@@ -204,11 +204,12 @@ local function iterate(t, options)
 end
 
 ----------  Encoder  ----------
+local encode
 local function encode_into(state, t)
     local function append(v) state[#state + 1] = v end
     if type(t) == 'table' then
         local keypath = state.keypath
-        assert(state[t] == nil, string.format("Cycle detected at keypath %q", table.concat(keypath, ' ')))
+        assert(state[t] == nil, string.format("Cycle detected at keypath %s", encode(keypath)))
         state[t] = true
         local compact = state.compact
         if compact and state[#state] == ' ' then state[#state] = nil end
@@ -245,7 +246,7 @@ local function encode_into(state, t)
     end
 end
 
-local function encode(t, compact)
+encode = function(t, compact)
     local state = { compact = compact, keypath = {} }
     local success, err = pcall(encode_into, state, t)
     if not success then
@@ -264,12 +265,15 @@ local function encode_to_file(stream, ...)
     stream = io.output(stream)
     stream:write(encoded_value)
     stream:close()
+    io.output(previous)
     return true
 end
 
 ----------  Keypaths  ----------
 local function get_internal(t, create_subtables, keypath, ...)
-    if type(keypath) ~= 'table' then keypath = { keypath, ...} end
+    if select('#', ...) > 0 then keypath = { keypath, ... }
+    elseif type(keypath) ~= 'table' then keypath = { keypath }
+    end
     for i = 1, #keypath do
         local key = keypath[i]
         local ttype = type(t)
@@ -298,10 +302,12 @@ end
 
 local function set_internal(t, create_subtables, keypath, ...)
     local value
-    if type(keypath) ~= 'table' then
-        keypath = { keypath, ...}
-        value = table.remove(keypath)
+    local n = select('#', ...)
+    if n > 1 then
+        keypath = { keypath, ... }
+        value, keypath[n + 1] = keypath[n + 1], nil
     else
+        if type(keypath) ~= 'table' then keypath = { keypath } end
         value = ...
     end
     local subtable, key = t, nil
