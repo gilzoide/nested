@@ -1,12 +1,14 @@
 # Nested
-A generic nested data structure file format.
+A generic nested data structure textual format.
 
-Data is formed by nested lists with associated key-value pair metadata.
-Each list can have any number of elements, either sublists or text values, and any number of metadata.
-Particularly, an empty list with metadata would be like an *associative array*, also called *maps* or *dictionaries*.
+Data is formed by nested lists with associated key-value paired data.
+Each list can have any number of elements, either sublists or text values, and any number of key-value data.
+Particularly, a list containing only sequential data would be like regular *lists* or *arrays* and
+a list containing only key-value data would be like *associative arrays*, *maps* or *dictionaries*.
 
 
 ## Format
+
 - Whitespace or commas `,` separates list nodes
 - Any non-whitespace sequence that don't fall in any of the following rules
   is a text value
@@ -18,7 +20,7 @@ Particularly, an empty list with metadata would be like an *associative array*, 
   appear normally in the middle of text values, like `f'` or `double"quotes"`
 - A mumber sign `#` starts a comment, so the rest of the line text is discarded.
   To use `#` as the first character in a text value, the text must be quoted
-- A colon `:` just after a text value marks a key-value metadata binding
+- A colon `:` just after a text value marks a key-value data binding
   with the just parsed text value being the key and the following node
   being a value. To use `:` in a text value, the text must be quoted.
   Notice that keys are always text, but values can be either text or nested lists.

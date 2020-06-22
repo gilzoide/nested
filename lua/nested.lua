@@ -139,11 +139,10 @@ local function read_block(state, s, opening_token)
     return toplevel or block, initial_length - #s
 end
 
---- TODO: support streamed IO
-local function decode(s, text_filter, table_constructor)
+local function decode(text, text_filter, table_constructor)
     table_constructor = table_constructor or function() return {} end
     local state = { line = 1, column = 1, text_filter = text_filter, table_constructor = table_constructor }
-    local success, result = pcall(read_block, state, s, '')
+    local success, result = pcall(read_block, state, text, '')
     if not success then return nil, string.format('Error at line %u (col %u): %s', state.line, state.column, result)
     else return result 
     end
@@ -158,7 +157,7 @@ local function decode_file(stream, ...)
     return decode(contents, ...)
 end
 
-----------  Non numeric pairs iterator  ----------
+----------  Iterators  ----------
 local function kpairs(t)
     return coroutine.wrap(function()
         for k, v in pairs(t) do
@@ -167,7 +166,6 @@ local function kpairs(t)
     end)
 end
 
-----------  Iterators  ----------
 local ORDER = 'order'
 local PREORDER = 'preorder'
 local POSTORDER = 'postorder'
