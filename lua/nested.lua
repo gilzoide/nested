@@ -238,7 +238,7 @@ local function encode_into(state, t)
         append(']')
     else
         local encoded_value = tostring(t)
-        if encoded_value:match('[ ,\t\r\n%[%]():;]') or encoded_value:match('^[\'\"`#]') then
+        if encoded_value:match('[ ,\t\r\n%[%](){}:;]') or encoded_value:match('^[\'\"`#]') then
             -- TODO: if compact, find out the quotation mark that requires less escaping
             encoded_value = '"' .. encoded_value:gsub('"', '""') .. '"'
         end
