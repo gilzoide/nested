@@ -24,7 +24,13 @@ local TOKEN_BY_PREFIX = {
     [';'] = 'SIBLING_DELIMITER',
     ["'"] = 'QUOTES', ['"'] = 'QUOTES', ['`'] = 'QUOTES',
 }
+local TOKEN_DESCRIPTION = {
+    [TOKEN.OPEN_BRACKETS] = '[', [TOKEN.CLOSE_BRACKETS] = ']',
+    [TOKEN.OPEN_PAREN] = '(', [TOKEN.CLOSE_PAREN] = ')',
+    [TOKEN.OPEN_BRACES] = '{', [TOKEN.CLOSE_BRACES] = '}',
+}
 local MATCHING_CLOSING_BLOCK = {
+    [''] = TOKEN.EOF,
     [TOKEN.OPEN_BRACKETS] = TOKEN.CLOSE_BRACKETS,
     [TOKEN.OPEN_PAREN] = TOKEN.CLOSE_PAREN,
     [TOKEN.OPEN_BRACES] = TOKEN.CLOSE_BRACES,
@@ -77,13 +83,23 @@ local function read_next_token(s)
 end
 
 local function token_description(t)
-    -- TODO: more user friendly token description
-    return type(t) == 'number' and TOKEN[t] or t
+    if type(t) == 'number' then
+        local description = TOKEN_DESCRIPTION[t]
+        if description then
+            return string.format("%q", description)
+        else
+            return TOKEN[t]
+        end
+    else
+        return t
+    end
 end
 
-local function read_block(state, s, expected_closing)
+local function read_block(state, s, opening_token)
+    local opening_token_description = TOKEN_DESCRIPTION[opening_token]
+    local expected_closing_token = MATCHING_CLOSING_BLOCK[opening_token]
     local table_constructor = state.table_constructor
-    local block = table_constructor()
+    local block = table_constructor(opening_token_description)
     local initial_length = #s
     local toplevel, key, token, previous_token, advance, quotation_mark
     repeat
@@ -100,10 +116,10 @@ local function read_block(state, s, expected_closing)
         elseif token == TOKEN.NEWLINE then
             state.line = state.line + 1
             state.column = 0 -- after advance, column will be 1
-        elseif token ~= expected_closing and (token == TOKEN.EOF or token == TOKEN.CLOSE_BRACKETS or token == TOKEN.CLOSE_PAREN or token == TOKEN.CLOSE_BRACES) then
-            error(string.format('Expected closing block with %s, but found %s', token_description(expected_closing), token_description(token)), 0)
+        elseif token ~= expected_closing_token and (token == TOKEN.EOF or token == TOKEN.CLOSE_BRACKETS or token == TOKEN.CLOSE_PAREN or token == TOKEN.CLOSE_BRACES) then
+            error(string.format('Expected closing block with %s, but found %s', token_description(expected_closing_token), token_description(token)), 0)
         elseif token == TOKEN.OPEN_BRACKETS or token == TOKEN.OPEN_PAREN or token == TOKEN.OPEN_BRACES then
-            local child_block, read_length = read_block(state, s:sub(advance), MATCHING_CLOSING_BLOCK[token])
+            local child_block, read_length = read_block(state, s:sub(advance), token)
             block[key or #block + 1], key = child_block, nil
             advance = advance + read_length
         elseif token == TOKEN.KEYVALUE then
@@ -112,18 +128,18 @@ local function read_block(state, s, expected_closing)
             end
         elseif token == TOKEN.SIBLING_DELIMITER then
             if toplevel == nil then
-                toplevel = table_constructor()
+                toplevel = table_constructor(opening_token_description)
                 toplevel[1] = block
             end
-            block = table_constructor()
+            block = table_constructor(opening_token_description)
             toplevel[#toplevel + 1] = block
         else
              -- TODO: after thorough testing, remove unecessary assertion
-            assert(token == expected_closing or token == TOKEN.SPACE or token == TOKEN.COMMENT, 'FIXME!!!')
+            assert(token == expected_closing_token or token == TOKEN.SPACE or token == TOKEN.COMMENT, 'FIXME!!!')
         end
         s = s:sub(advance)
         state.column = state.column + advance - 1
-    until token == expected_closing
+    until token == expected_closing_token
     return toplevel or block, initial_length - #s
 end
 
@@ -131,7 +147,7 @@ end
 local function decode(s, text_filter, table_constructor)
     table_constructor = table_constructor or function() return {} end
     local state = { line = 1, column = 1, text_filter = text_filter, table_constructor = table_constructor }
-    local success, result = pcall(read_block, state, s, TOKEN.EOF)
+    local success, result = pcall(read_block, state, s, '')
     if not success then return nil, string.format('Error at line %u (col %u): %s', state.line, state.column, result)
     else return result 
     end

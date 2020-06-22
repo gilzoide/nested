@@ -12,9 +12,12 @@ Tank-'t2'
     [3 2 1]
 ;
 
-a; b; c
+a; b; c(d){e;f}
 ]]
-local result = assert(nested.decode(text, nested.bool_number_filter))
+local result = assert(nested.decode(text, nested.bool_number_filter, function(opening)
+    print('Opening', opening)
+    return {}
+end))
 print(string.format("%q %q %q", result[1].x, result[1].y, result[1].z))
 print(nested.encode(result))
 --[[
