@@ -356,5 +356,3 @@ return {
     TABLE_ONLY = TABLE_ONLY,
     INCLUDE_KV = INCLUDE_KV,
 }
-
--- TODO: document stuff

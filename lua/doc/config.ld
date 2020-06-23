@@ -1,2 +1,2 @@
 format = 'markdown'
-readme = "../../README.md"
+readme = {"../../README.md", '01-Format.md'}
