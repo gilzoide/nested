@@ -171,11 +171,13 @@ local PREORDER = 'preorder'
 local POSTORDER = 'postorder'
 local TABLE_ONLY = 'table_only'
 local INCLUDE_KV = 'include_kv'
+local SKIP_ROOT = 'skip_root'
 local function iterate_step(keypath, t, parent, options)
     local is_table = type(t) == 'table'
     if options[TABLE_ONLY] and not is_table then return end
+    local skip = options[SKIP_ROOT] and #keypath == 0
     local is_postorder = options[ORDER] == POSTORDER
-    if not is_postorder then coroutine.yield(keypath, t, parent) end
+    if not skip and not is_postorder then coroutine.yield(keypath, t, parent) end
     if is_table then
         local keypath_index = #keypath + 1
         for i = 1, #t do
@@ -190,7 +192,7 @@ local function iterate_step(keypath, t, parent, options)
         end
         keypath[keypath_index] = nil
     end
-    if is_postorder then coroutine.yield(keypath, t, parent) end
+    if not skip and is_postorder then coroutine.yield(keypath, t, parent) end
 end
 local function iterate(t, options)
     options = options or {}
@@ -355,4 +357,5 @@ return {
     POSTORDER = POSTORDER,
     TABLE_ONLY = TABLE_ONLY,
     INCLUDE_KV = INCLUDE_KV,
+    SKIP_ROOT = SKIP_ROOT,
 }

@@ -9,7 +9,7 @@ print(nested.get(t, 2))
 print(nested.get(t, 4, 'i', 1, 5, 6))
 print(nested.get_or_create(t, 'keypath', 'create', 'successfully'))
 
-for kp, v, parent in nested.iterate(t, { include_kv = true, table_only = false }) do
+for kp, v, parent in nested.iterate(t, { include_kv = true, table_only = false, skip_root = true }) do
     print(#kp, table.concat(kp, ' '), parent, v)
 end
 
