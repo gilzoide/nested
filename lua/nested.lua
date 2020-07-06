@@ -200,20 +200,47 @@ local function iterate(t, options)
 end
 
 ----------  Encoder  ----------
+local anchor_mt = {}
+function anchor_mt.__tostring(self)
+    local ref
+    if self.ref_count > 0 then
+        self.state.anchor_count = self.state.anchor_count + 1
+        self.index = self.state.anchor_count
+        ref = string.format("&%d ", self.index)
+    end
+    local opening = self.sibling and ';' or '['
+    return opening .. (ref or '')
+end
+function anchor_mt.new(state, sibling)
+    return setmetatable({ state = state, sibling = sibling, ref_count = 0 }, anchor_mt)
+end
+
+local anchor_reference_mt = {}
+function anchor_reference_mt.__tostring(self)
+    return '*' .. self.anchor.index
+end
+function anchor_reference_mt.new(anchor)
+    anchor.ref_count = anchor.ref_count + 1
+    return setmetatable({ anchor = anchor }, anchor_reference_mt)
+end
+
 local encode
 local function encode_into(state, t)
     local function append(v) state[#state + 1] = v end
     if type(t) == 'table' then
         local keypath = state.keypath
-        assert(state[t] == nil, string.format("Cycle detected at keypath %s", encode(keypath)))
-        state[t] = true
+        if state[t] ~= nil then
+            append(anchor_reference_mt.new(state[t]))
+            return
+        end
         local compact = state.compact
         if compact and state[#state] == ' ' then state[#state] = nil end
         if state[#state] == ']' then
-            state[#state] = ';'
+            state[#state] = anchor_mt.new(state, true)
         else
-            append('[')
+            append(anchor_mt.new(state, false))
         end
+        state[t] = state[#state]
         for i, v in ipairs(t) do
             keypath[#keypath + 1] = i
             encode_into(state, v)
@@ -243,13 +270,14 @@ local function encode_into(state, t)
 end
 
 encode = function(t, compact)
-    local state = { compact = compact, keypath = {} }
+    local state = { compact = compact, keypath = {}, anchor_count = 0 }
     local success, err = pcall(encode_into, state, t)
     if not success then
         return nil, err
     else
-        local i = compact and 2 or nil
-        local j = compact and #state - 1 or nil
+        local i = compact and 2 or 1
+        local j = compact and #state - 1 or #state
+        for k = i, j do state[k] = tostring(state[k]) end
         return table.concat(state, '', i, j)
     end
 end
