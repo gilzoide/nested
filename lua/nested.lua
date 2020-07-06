@@ -177,8 +177,9 @@ local function iterate_step(keypath, t, parent, options)
     if options[TABLE_ONLY] and not is_table then return end
     local skip = options[SKIP_ROOT] and #keypath == 0
     local is_postorder = options[ORDER] == POSTORDER
-    if not skip and not is_postorder then coroutine.yield(keypath, t, parent) end
-    if is_table then
+    local skip_inner
+    if not skip and not is_postorder then skip_inner = coroutine.yield(keypath, t, parent) end
+    if not skip_inner and is_table then
         local keypath_index = #keypath + 1
         for i = 1, #t do
             keypath[keypath_index] = i
