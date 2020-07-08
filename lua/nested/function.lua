@@ -44,6 +44,15 @@ local function iterate_table(t)
     end
 end
 
+function nested_function.iscallable(v)
+    local vtype = type(v)
+    if vtype == 'table' or vtype == 'userdata' then
+        local mt = getmetatable(v)
+        return mt and mt.__call
+    end
+    return vtype == 'function'
+end
+
 local loadstring_with_env
 if setfenv and loadstring then
     loadstring_with_env = function(body, env)
@@ -91,7 +100,7 @@ local function evaluate_step(t, env)
                     env[k] = v
                 end
             end
-            if type(env[1]) == 'function' then
+            if nested_function.iscallable(env[1]) then
                 local f = table.remove(env, 1)
                 if have_hash then
                     return f(env)
