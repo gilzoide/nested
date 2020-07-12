@@ -95,7 +95,7 @@ local function read_block(state, s, opening_token)
     local opening_token_description = TOKEN_DESCRIPTION[opening_token]
     local expected_closing_token = MATCHING_CLOSING_BLOCK[opening_token]
     local table_constructor = state.table_constructor
-    local block = table_constructor(opening_token_description)
+    local block = table_constructor(opening_token_description, state.line)
     local initial_length = #s
     local toplevel, key, token, previous_token, advance, quotation_mark
     repeat
@@ -127,7 +127,7 @@ local function read_block(state, s, opening_token)
                 toplevel = table_constructor(opening_token_description)
                 toplevel[1] = block
             end
-            block = table_constructor(opening_token_description)
+            block = table_constructor(opening_token_description, state.line)
             toplevel[#toplevel + 1] = block
         else
              -- TODO: after thorough testing, remove unecessary assertion
