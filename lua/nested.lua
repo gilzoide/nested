@@ -46,7 +46,7 @@ local LEXICAL_SCANNERS = {
         local pos = s:match('#[^\n]+()')
         return TOKEN.COMMENT, pos
     end,
-    NEWLINE = function(s) return TOKEN.NEWLINE, 2 end,
+    NEWLINE = function(s) return TOKEN.NEWLINE, 2, 1, 1 end,
     EOF = function(s) return TOKEN.EOF, 0 end,
     OPEN_BRACKETS = function(s) return TOKEN.OPEN_BRACKETS, 2 end,
     CLOSE_BRACKETS = function(s) return TOKEN.CLOSE_BRACKETS, 2 end,
@@ -58,11 +58,18 @@ local LEXICAL_SCANNERS = {
     SIBLING_DELIMITER = function(s) return TOKEN.SIBLING_DELIMITER, 2 end,
     QUOTES = function(s)
         local delimiter = s:sub(1, 1)
+        local pattern = string.format("([^%s]*%s?)%s()", delimiter, delimiter, delimiter) -- ([^']*'?)'()
         local components = {}
-        for m, pos in s:sub(2):gmatch('([^' .. delimiter .. ']*' .. delimiter .. '?)' .. delimiter .. '()') do -- ([^']*'?)'()
+        for m, pos in s:sub(2):gmatch(pattern) do
             components[#components + 1] = m
             if m:sub(-1) ~= delimiter then
-                return table.concat(components), pos + 1, delimiter
+                local result = table.concat(components)
+                local newlines, last_start = 0, nil
+                for pos_after_newline in result:gmatch("\n()") do
+                    newlines = newlines + 1
+                    last_start = pos_after_newline
+                end
+                return result, pos + 1, newlines, (last_start and pos - last_start + 1), delimiter
             end
         end
         error(string.format('Unmatched closing %q', delimiter), 0)
@@ -97,25 +104,23 @@ local function read_block(state, s, opening_token)
     local table_constructor = state.table_constructor
     local block = table_constructor(opening_token_description, state.line)
     local initial_length = #s
-    local toplevel, key, token, previous_token, advance, quotation_mark
+    local toplevel, key, value, token, previous_token, advance, newlines, newcolumn, quotation_mark, child_block, read_length
     repeat
         previous_token = token
-        token, advance, quotation_mark = read_next_token(s)
+        token, advance, newlines, newcolumn, quotation_mark = read_next_token(s)
         if type(token) == 'string' then
             if key or peek_token_type_name(s:sub(advance)) ~= 'KEYVALUE' then
-                local value = state.text_filter and state.text_filter(token, quotation_mark)
+                value = state.text_filter and state.text_filter(token, quotation_mark)
                 if value == nil then value = token end
                 block[key or #block + 1], key = value, nil
             else
                 key = token
             end
-        elseif token == TOKEN.NEWLINE then
-            state.line = state.line + 1
-            state.column = 0 -- after advance, column will be 1
         elseif token ~= expected_closing_token and (token == TOKEN.EOF or token == TOKEN.CLOSE_BRACKETS or token == TOKEN.CLOSE_PAREN or token == TOKEN.CLOSE_BRACES) then
             error(string.format('Expected closing block with %s, but found %s', token_description(expected_closing_token), token_description(token)), 0)
         elseif token == TOKEN.OPEN_BRACKETS or token == TOKEN.OPEN_PAREN or token == TOKEN.OPEN_BRACES then
-            local child_block, read_length = read_block(state, s:sub(advance), token)
+            state.column = state.column + advance - 1
+            child_block, read_length, newcolumn = read_block(state, s:sub(advance), token)
             block[key or #block + 1], key = child_block, nil
             advance = advance + read_length
         elseif token == TOKEN.KEYVALUE then
@@ -131,12 +136,13 @@ local function read_block(state, s, opening_token)
             toplevel[#toplevel + 1] = block
         else
              -- TODO: after thorough testing, remove unecessary assertion
-            assert(token == expected_closing_token or token == TOKEN.SPACE or token == TOKEN.COMMENT, 'FIXME!!!')
+            assert(token == expected_closing_token or token == TOKEN.SPACE or token == TOKEN.COMMENT or token == TOKEN.NEWLINE, 'FIXME!!!')
         end
         s = s:sub(advance)
-        state.column = state.column + advance - 1
+        state.column = newcolumn or (state.column + advance - 1)
+        if newlines then state.line = state.line + newlines end
     until token == expected_closing_token
-    return toplevel or block, initial_length - #s
+    return toplevel or block, initial_length - #s, state.column
 end
 
 local function decode(text, text_filter, table_constructor)
