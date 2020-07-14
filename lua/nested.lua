@@ -101,7 +101,7 @@ end
 local function read_block(state, s, opening_token)
     local opening_token_description = TOKEN_DESCRIPTION[opening_token]
     local expected_closing_token = MATCHING_CLOSING_BLOCK[opening_token]
-    local table_constructor = state.table_constructor
+    local table_constructor, text_filter = state.table_constructor, state.text_filter
     local block = table_constructor(opening_token_description, state.line)
     local initial_length = #s
     local toplevel, key, value, token, previous_token, advance, newlines, newcolumn, quotation_mark, child_block, read_length
@@ -110,7 +110,7 @@ local function read_block(state, s, opening_token)
         token, advance, newlines, newcolumn, quotation_mark = read_next_token(s)
         if type(token) == 'string' then
             if key or peek_token_type_name(s:sub(advance)) ~= 'KEYVALUE' then
-                value = state.text_filter and state.text_filter(token, quotation_mark)
+                value = text_filter and text_filter(token, quotation_mark, state.line)
                 if value == nil then value = token end
                 block[key or #block + 1], key = value, nil
             else
