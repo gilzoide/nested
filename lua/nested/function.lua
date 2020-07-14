@@ -59,7 +59,7 @@ local function evaluate_step(t, read_env, ...)
     end
 end
 
-function nested_function.evaluate_with_env(t, fenv, ...)
+function nested_function.evaluate_with_env(t, read_env, ...)
     return evaluate_step(t, read_env, ...)
 end
 
