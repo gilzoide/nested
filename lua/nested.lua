@@ -101,9 +101,9 @@ end
 local function read_block(state, s, opening_token)
     local opening_token_description = TOKEN_DESCRIPTION[opening_token]
     local expected_closing_token = MATCHING_CLOSING_BLOCK[opening_token]
-    local table_constructor, text_filter = state.table_constructor, state.text_filter
+    local table_constructor, text_filter, table_filter = state.table_constructor, state.text_filter, state.table_filter
     local block = table_constructor(opening_token_description, state.line)
-    local initial_length = #s
+    local initial_length, initial_line = #s, state.line
     local toplevel, key, value, token, previous_token, advance, newlines, newcolumn, quotation_mark, child_block, read_length
     repeat
         previous_token = token
@@ -129,8 +129,8 @@ local function read_block(state, s, opening_token)
             end
         elseif token == TOKEN.SIBLING_DELIMITER then
             if toplevel == nil then
-                toplevel = table_constructor(opening_token_description)
-                toplevel[1] = block
+                toplevel = table_constructor(opening_token_description, initial_line)
+                toplevel[1] = table_filter and table_filter(block) or block
             end
             block = table_constructor(opening_token_description, state.line)
             toplevel[#toplevel + 1] = block
@@ -142,12 +142,21 @@ local function read_block(state, s, opening_token)
         state.column = newcolumn or (state.column + advance - 1)
         if newlines then state.line = state.line + newlines end
     until token == expected_closing_token
-    return toplevel or block, initial_length - #s, state.column
+    toplevel = toplevel or block
+    if table_filter then
+        toplevel = table_filter(toplevel) or toplevel
+    end
+    return toplevel, initial_length - #s, state.column
 end
 
-local function decode(text, text_filter, table_constructor)
-    table_constructor = table_constructor or function() return {} end
-    local state = { line = 1, column = 1, text_filter = text_filter, table_constructor = table_constructor }
+local function decode(text, options)
+    options = options or {}
+    local state = {
+        line = 1, column = 1,
+        text_filter = options.text_filter,
+        table_filter = options.table_filter,
+        table_constructor = options.table_constructor or function() return {} end,
+    }
     local success, result = pcall(read_block, state, text, '')
     if not success then return nil, string.format('Error at line %u (col %u): %s', state.line, state.column, result)
     else return result 
