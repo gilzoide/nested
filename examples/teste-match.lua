@@ -1,6 +1,7 @@
 local nested = require 'nested'
 local nested_match = require 'nested.match'
 local nested_function = require 'nested.function'
+local nested_ordered = require 'nested.ordered'
 
 local t = nested.decode([=[
 a: 5
@@ -14,7 +15,7 @@ c: [
     ]
 ]
 
-]=], nested.bool_number_filter)
+]=], { text_filter = nested.bool_number_filter })
 
 local pattern = nested.decode([=[
 a
@@ -24,9 +25,9 @@ c.g: [> 100]
 !b: [> 100]
 !c.non-existent
 [function(t) `return #t == 0 and t.a > 2`]
-]=], nested.bool_number_filter, nested_function.new)
+]=], { text_filter = nested.bool_number_filter, table_constructor = nested_ordered.new })
 
-pattern = pattern({
+pattern = nested_function.evaluate(pattern, {
     ['>'] = function(const)
         return function(v)
             return v > const

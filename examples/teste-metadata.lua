@@ -1,6 +1,6 @@
 local nested = require 'nested'
 
-local t = nested.decode('1 2 3 a:a b:b c:c [g h i: [j k]]', nil)
+local t = nested.decode('1 2 3 a:a b:b c:c [g h i: [j k]]')
 
 print(nested.encode(t, false))
 print(nested.get(t, 4, 2))
