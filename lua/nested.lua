@@ -291,8 +291,9 @@ encode = function(t, compact)
     if not success then
         return nil, err
     else
-        local i = compact and 2 or 1
-        local j = compact and #state - 1 or #state
+        local is_table = type(t) == 'table'
+        local i = is_table and 2 or 1
+        local j = is_table and #state - 1 or #state
         for k = i, j do state[k] = tostring(state[k]) end
         return table.concat(state, '', i, j)
     end
