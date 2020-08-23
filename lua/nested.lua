@@ -158,8 +158,8 @@ local function decode(text, options)
     local table_constructor = options and options.table_constructor or create_table
     local root_constructor = options and options.root_constructor or table_constructor
 
-    local current, key, value = root_constructor('')
-    local keypath, table_stack = {}, { current }
+    local current, key, value = root_constructor('', line, column)
+    local table_stack = { current }
     for line, column, event, token, quote in decode_iterate(text) do
         if event == 'TEXT' then
             value = text_filter and text_filter(token, quote, line, column)
@@ -168,7 +168,7 @@ local function decode(text, options)
         elseif event == 'KEY' then
             key = token
         elseif event == 'OPEN_NESTED' then
-            local nested_table = table_constructor(token)
+            local nested_table = table_constructor(token, line, column)
             current[key or #current + 1], key = nested_table, nil
             table.insert(table_stack, nested_table)
             current = nested_table
