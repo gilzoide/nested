@@ -237,17 +237,16 @@ end
 ----------  Encoder  ----------
 local anchor_mt = {}
 function anchor_mt.__tostring(self)
-    local ref
+    local ref = ''
     if self.ref_count > 0 then
         self.state.anchor_count = self.state.anchor_count + 1
         self.index = self.state.anchor_count
         ref = string.format("&%d ", self.index)
     end
-    local opening = self.sibling and ';' or '['
-    return opening .. (ref or '')
+    return '[' .. ref
 end
-function anchor_mt.new(state, sibling)
-    return setmetatable({ state = state, sibling = sibling, ref_count = 0 }, anchor_mt)
+function anchor_mt.new(state)
+    return setmetatable({ state = state, ref_count = 0 }, anchor_mt)
 end
 
 local anchor_reference_mt = {}
@@ -270,11 +269,7 @@ local function encode_into(state, t)
         end
         local compact = state.compact
         if compact and state[#state] == ' ' then state[#state] = nil end
-        if state[#state] == ']' then
-            state[#state] = anchor_mt.new(state, true)
-        else
-            append(anchor_mt.new(state, false))
-        end
+        append(anchor_mt.new(state))
         state[t] = state[#state]
         for i, v in ipairs(t) do
             keypath[#keypath + 1] = i
