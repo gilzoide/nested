@@ -14,8 +14,10 @@ Options:
 if args.input_name == '-' then args.input:close(); args.input = io.stdin end
 if args.output_name == '-' then args.output:close(); args.output = io.stdout end
 
-local filter = args.table and nested.bool_number_filter or nil
-local contents = assert(nested.decode_file(args.input, filter, function() return OrderedMap() end))
+local contents = assert(nested.decode_file(args.input, {
+    text_filter = args.table and nested.bool_number_filter or nil,
+    table_constructor = function() return OrderedMap() end,
+}))
 
 if args.table then
     local ret = args.tight and 'return' or 'return '
