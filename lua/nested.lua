@@ -1,5 +1,5 @@
--- Ignore: blank ,\t\r
--- Always special: \n()[]{}:;
+-- Ignore: blank ,;\t\r
+-- Always special: \n()[]{}:
 -- Special if first in token: '"`#
 ----------  Decoder  ----------
 local TOKEN = {
@@ -7,13 +7,13 @@ local TOKEN = {
     'OPEN_BRACKETS', 'CLOSE_BRACKETS',
     'OPEN_PAREN', 'CLOSE_PAREN',
     'OPEN_BRACES', 'CLOSE_BRACES',
-    'KEYVALUE', 'SIBLING_DELIMITER',
-    -- 'QUOTES', 'TEXT' -- both return as strings rather than numeric codes
+    'KEYVALUE',
+    -- 'QUOTED', 'TEXT' -- both return as strings rather than numeric codes
 }
 for i = 1, #TOKEN do TOKEN[TOKEN[i]] = i end
 
 local TOKEN_BY_PREFIX = {
-    [' '] = 'SPACE', [','] = 'SPACE', ['\t'] = 'SPACE', ['\r'] = 'SPACE',
+    [' '] = 'SPACE', [','] = 'SPACE', [';'] = 'SPACE', ['\t'] = 'SPACE', ['\r'] = 'SPACE',
     ['#'] = 'COMMENT',
     ['\n'] = 'NEWLINE',
     [''] = 'EOF',
@@ -21,8 +21,7 @@ local TOKEN_BY_PREFIX = {
     ['('] = 'OPEN_PAREN', [')'] = 'CLOSE_PAREN',
     ['{'] = 'OPEN_BRACES', ['}'] = 'CLOSE_BRACES',
     [':'] = 'KEYVALUE',
-    [';'] = 'SIBLING_DELIMITER',
-    ["'"] = 'QUOTES', ['"'] = 'QUOTES', ['`'] = 'QUOTES',
+    ["'"] = 'QUOTED', ['"'] = 'QUOTED', ['`'] = 'QUOTED',
 }
 local TOKEN_DESCRIPTION = {
     [TOKEN.OPEN_BRACKETS] = '[', [TOKEN.CLOSE_BRACKETS] = ']',
@@ -55,8 +54,7 @@ local LEXICAL_SCANNERS = {
     OPEN_BRACES = function(s) return TOKEN.OPEN_BRACES, 2 end,
     CLOSE_BRACES = function(s) return TOKEN.CLOSE_BRACES, 2 end,
     KEYVALUE = function(s) return TOKEN.KEYVALUE, 2 end,
-    SIBLING_DELIMITER = function(s) return TOKEN.SIBLING_DELIMITER, 2 end,
-    QUOTES = function(s)
+    QUOTED = function(s)
         local delimiter = s:sub(1, 1)
         local pattern = string.format("([^%s]*%s?)%s()", delimiter, delimiter, delimiter) -- ([^']*'?)'()
         local components = {}
@@ -72,10 +70,10 @@ local LEXICAL_SCANNERS = {
                 return result, pos + 1, newlines, (last_start and pos - last_start + 1), delimiter
             end
         end
-        error(string.format('Unmatched closing %q', delimiter), 0)
+        return nil, string.format('Unmatched closing %q', delimiter)
     end,
     TEXT = function(s)
-        return s:match('([^ ,\t\r\n%[%](){}:;]+)()')
+        return s:match('([^ ,;\t\r\n%[%](){}:]+)()')
     end,
 }
 
@@ -98,69 +96,90 @@ local function token_description(t)
     end
 end
 
-local function read_block(state, s, opening_token)
-    local opening_token_description = TOKEN_DESCRIPTION[opening_token]
-    local expected_closing_token = MATCHING_CLOSING_BLOCK[opening_token]
-    local table_constructor, text_filter, table_filter = state.table_constructor, state.text_filter, state.table_filter
-    local block = table_constructor(opening_token_description, state.line)
-    local initial_length, initial_line = #s, state.line
-    local toplevel, key, value, token, previous_token, advance, newlines, newcolumn, quotation_mark, child_block, read_length
+local PARSE_EVENTS = { 'TEXT', 'KEY', 'OPEN_NESTED', 'CLOSE_NESTED', 'SIBLING', 'ERROR' }
+for i = 1, #PARSE_EVENTS do local name = PARSE_EVENTS[i]; PARSE_EVENTS[name] = name end
+
+local function decode_iterate_coroutine(text)
+    local line, column = 1, 1
+    local function send_event(event, ...) coroutine.yield(line, column, event, ...) end
+    local expected_closing_token = MATCHING_CLOSING_BLOCK['']
+    local expected_closing_stack = { expected_closing_token }
+
+    local token, previous_token, advance, newlines, newcolumn, quotation_mark
     repeat
         previous_token = token
-        token, advance, newlines, newcolumn, quotation_mark = read_next_token(s)
-        if type(token) == 'string' then
-            if key or peek_token_type_name(s:sub(advance)) ~= 'KEYVALUE' then
-                value = text_filter and text_filter(token, quotation_mark, state.line)
-                if value == nil then value = token end
-                block[key or #block + 1], key = value, nil
+        token, advance, newlines, newcolumn, quotation_mark = read_next_token(text)
+        if not token then
+            send_event(PARSE_EVENTS.ERROR, advance)
+            break
+        elseif type(token) == 'string' then
+            if peek_token_type_name(text:sub(advance)) == 'KEYVALUE' then
+                send_event(PARSE_EVENTS.KEY, token, quotation_mark)
             else
-                key = token
+                send_event(PARSE_EVENTS.TEXT, token, quotation_mark)
             end
-        elseif token ~= expected_closing_token and (token == TOKEN.EOF or token == TOKEN.CLOSE_BRACKETS or token == TOKEN.CLOSE_PAREN or token == TOKEN.CLOSE_BRACES) then
-            error(string.format('Expected closing block with %s, but found %s', token_description(expected_closing_token), token_description(token)), 0)
+        elseif token == TOKEN.EOF or token == TOKEN.CLOSE_BRACKETS or token == TOKEN.CLOSE_PAREN or token == TOKEN.CLOSE_BRACES then
+            if token == expected_closing_token then
+                if token == TOKEN.EOF then break end
+                send_event(PARSE_EVENTS.CLOSE_NESTED, TOKEN_DESCRIPTION[token])
+                table.remove(expected_closing_stack)
+                expected_closing_token = expected_closing_stack[#expected_closing_stack]
+            else
+                send_event(PARSE_EVENTS.ERROR, string.format('Expected closing block with %s, but found %s', token_description(expected_closing_token), token_description(token)))
+                break
+            end
         elseif token == TOKEN.OPEN_BRACKETS or token == TOKEN.OPEN_PAREN or token == TOKEN.OPEN_BRACES then
-            state.column = state.column + advance - 1
-            child_block, read_length, newcolumn = read_block(state, s:sub(advance), token)
-            block[key or #block + 1], key = child_block, nil
-            advance = advance + read_length
+            send_event(PARSE_EVENTS.OPEN_NESTED, TOKEN_DESCRIPTION[token])
+            expected_closing_token = MATCHING_CLOSING_BLOCK[token]
+            table.insert(expected_closing_stack, expected_closing_token)
         elseif token == TOKEN.KEYVALUE then
             if type(previous_token) ~= 'string' then
-                error(string.format('Key-value mapping must appear right after text, found %s instead', token_description(previous_token)), 0)
+                send_event(PARSE_EVENTS.ERROR, string.format('Key-value mapping must appear right after text, found %s instead', token_description(previous_token)))
+                break
             end
-        elseif token == TOKEN.SIBLING_DELIMITER then
-            if toplevel == nil then
-                toplevel = table_constructor(opening_token_description, initial_line)
-                toplevel[1] = table_filter and table_filter(block) or block
-            end
-            block = table_constructor(opening_token_description, state.line)
-            toplevel[#toplevel + 1] = block
         else
              -- TODO: after thorough testing, remove unecessary assertion
-            assert(token == expected_closing_token or token == TOKEN.SPACE or token == TOKEN.COMMENT or token == TOKEN.NEWLINE, 'FIXME!!!')
+            assert(token == TOKEN.SPACE or token == TOKEN.COMMENT or token == TOKEN.NEWLINE, 'FIXME!!!')
         end
-        s = s:sub(advance)
-        state.column = newcolumn or (state.column + advance - 1)
-        if newlines then state.line = state.line + newlines end
-    until token == expected_closing_token
-    toplevel = toplevel or block
-    if table_filter then
-        toplevel = table_filter(toplevel) or toplevel
-    end
-    return toplevel, initial_length - #s, state.column
+
+        text = text:sub(advance)
+        column = newcolumn or (column + advance - 1)
+        if newlines then line = line + newlines end
+    until token == TOKEN.EOF
+end
+local function decode_iterate(text)
+    return coroutine.wrap(function() decode_iterate_coroutine(text) end)
 end
 
+local function create_table() return {} end
 local function decode(text, options)
-    options = options or {}
-    local state = {
-        line = 1, column = 1,
-        text_filter = options.text_filter,
-        table_filter = options.table_filter,
-        table_constructor = options.table_constructor or function() return {} end,
-    }
-    local success, result = pcall(read_block, state, text, '')
-    if not success then return nil, string.format('Error at line %u (col %u): %s', state.line, state.column, result)
-    else return result 
+    local text_filter = options and options.text_filter
+    local table_filter = options and options.table_filter
+    local table_constructor = options and options.table_constructor or create_table
+    local root_constructor = options and options.root_constructor or table_constructor
+
+    local current, key, value = root_constructor('')
+    local keypath, table_stack = {}, { current }
+    for line, column, event, token, quote in decode_iterate(text) do
+        if event == 'TEXT' then
+            value = text_filter and text_filter(token, quote, line, column)
+            if value == nil then value = token end
+            current[key or #current + 1], key = value, nil
+        elseif event == 'KEY' then
+            key = token
+        elseif event == 'OPEN_NESTED' then
+            local nested_table = table_constructor(token)
+            current[key or #current + 1], key = nested_table, nil
+            table.insert(table_stack, nested_table)
+            current = nested_table
+        elseif event == 'CLOSE_NESTED' then
+            table.remove(table_stack)
+            current = table_stack[#table_stack]
+        elseif event == 'ERROR' then
+            return nil, string.format('Error at line %u (col %u): %s', line, column, token)
+        end
     end
+    return current
 end
 
 local function decode_file(stream, ...)
@@ -390,7 +409,7 @@ end
 
 ----------  Module  ----------
 return {
-    decode = decode, decode_file = decode_file,
+    decode_iterate = decode_iterate, decode = decode, decode_file = decode_file,
     encode = encode, encode_to_file = encode_to_file,
     kpairs = kpairs,
     bool_number_filter = bool_number_filter,
