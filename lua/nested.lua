@@ -151,12 +151,14 @@ local function decode_iterate(text)
     return coroutine.wrap(function() decode_iterate_coroutine(text) end)
 end
 
+local EMPTY_OPTIONS = {}
 local function create_table() return {} end
 local function decode(text, options)
-    local text_filter = options and options.text_filter
-    local table_filter = options and options.table_filter
-    local table_constructor = options and options.table_constructor or create_table
-    local root_constructor = options and options.root_constructor or table_constructor
+    options = options or EMPTY_OPTIONS
+    local text_filter = options.text_filter
+    local table_filter = options.table_filter
+    local table_constructor = options.table_constructor or create_table
+    local root_constructor = options.root_constructor or table_constructor
 
     local current, key, value = root_constructor('', line, column)
     local table_stack = { current }
@@ -200,9 +202,8 @@ local function kpairs(t)
     end)
 end
 
-local ORDER = 'order'
-local PREORDER = 'preorder'
 local POSTORDER = 'postorder'
+local POSTORDER_ONLY = 'only'
 local TABLE_ONLY = 'table_only'
 local INCLUDE_KV = 'include_kv'
 local SKIP_ROOT = 'skip_root'
@@ -210,9 +211,9 @@ local function iterate_step(keypath, t, parent, options)
     local is_table = type(t) == 'table'
     if options[TABLE_ONLY] and not is_table then return end
     local skip = options[SKIP_ROOT] and #keypath == 0
-    local is_postorder = options[ORDER] == POSTORDER
+    local postorder = options[POSTORDER]
     local skip_inner
-    if not skip and not is_postorder then skip_inner = coroutine.yield(keypath, t, parent) end
+    if not skip and postorder ~= POSTORDER_ONLY then skip_inner = coroutine.yield(keypath, t, parent, true) end
     if not skip_inner and is_table then
         local keypath_index = #keypath + 1
         for i = 1, #t do
@@ -227,10 +228,10 @@ local function iterate_step(keypath, t, parent, options)
         end
         keypath[keypath_index] = nil
     end
-    if not skip and is_postorder then coroutine.yield(keypath, t, parent) end
+    if not skip and postorder then coroutine.yield(keypath, t, parent, false) end
 end
 local function iterate(t, options)
-    options = options or {}
+    options = options or EMPTY_OPTIONS
     return coroutine.wrap(function() iterate_step({}, t, nil, options) end)
 end
 
@@ -411,9 +412,8 @@ return {
     get = get, get_or_create = get_or_create,
     set = set, set_or_create = set_or_create,
     iterate = iterate,
-    ORDER = ORDER,
-    PREORDER = PREORDER,
     POSTORDER = POSTORDER,
+    POSTORDER_ONLY = POSTORDER_ONLY,
     TABLE_ONLY = TABLE_ONLY,
     INCLUDE_KV = INCLUDE_KV,
     SKIP_ROOT = SKIP_ROOT,
