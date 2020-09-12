@@ -238,13 +238,13 @@ end
 ----------  Encoder  ----------
 local anchor_mt = {}
 function anchor_mt.__tostring(self)
-    local ref = ''
     if self.ref_count > 0 then
         self.state.anchor_count = self.state.anchor_count + 1
         self.index = self.state.anchor_count
-        ref = string.format("&%d ", self.index)
+        return string.format("&%d ", self.index)
+    else
+        return ''
     end
-    return '[' .. ref
 end
 function anchor_mt.new(state)
     return setmetatable({ state = state, ref_count = 0 }, anchor_mt)
@@ -297,12 +297,14 @@ local function encode(t, indent_spaces)
     local function encode_into(t, indent_level)
         if type(t) == 'table' then
             if state[t] ~= nil then
+                -- t was already encoded, just add a reference to it
                 append(anchor_reference_mt.new(state[t]))
                 return
             end
-            append(anchor_mt.new(state))
-            if #state > 1 and next(t) ~= nil then append_indent(indent_level, false) end
-            state[t] = state[#state]
+            append('[')
+            state[t] = anchor_mt.new(state)
+            append(state[t])
+            if #state > 2 and next(t) ~= nil then append_indent(indent_level, false) end
             local previous_state_level = #state
             for i, v in ipairs(t) do
                 if compact and type(v) == 'table' and last_is_space() then remove_last() end
@@ -310,7 +312,7 @@ local function encode(t, indent_spaces)
                 if not compact or (type(v) ~= 'table' and not_quoted(state[#state])) then append_indent(indent_level, true) end
             end
             for k, v in kpairs(t) do
-                -- TODO: error if k is table
+                -- TODO: error if k is table?
                 encode_into(k, indent_level + 1)
                 append(':')
                 if not compact then append(' ') end
