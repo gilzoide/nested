@@ -2,11 +2,11 @@ local nested = require 'nested'
 require 'pl'
 
 local args = lapp [[
-Usage: nested [--table] [--tight] [<input>] [-o <output>]
+Usage: nested [--table] [--indent <indent>] [<input>] [-o <output>]
 
 Options:
   --table                       Output a `require`able lua script that returns the data as a single table
-  --tight                       Suppress indentation and other unneeded charaters
+  -i,--indent (default 2)       Indentation level used.
   <input> (default stdin)       Input file. If absent, reads from stdin
   -o,--output (default stdout)  Output file. If absent, writes to stdout
 ]]
@@ -21,7 +21,7 @@ local contents = assert(nested.decode_file(args.input, {
 
 if args.table then
     local ret = args.tight and 'return' or 'return '
-    args.output:write(ret .. pretty.write(contents, args.tight and ''))
+    args.output:write(ret .. pretty.write(contents, string.rep(' ', args.indent)))
 else
-    assert(nested.encode_to_file(contents, args.output, args.tight))
+    assert(nested.encode_to_file(contents, args.output, args.indent))
 end

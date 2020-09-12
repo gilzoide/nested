@@ -41,10 +41,11 @@
 -- Values are encoded using @{tostring}, so a `__tostring` method may be called.
 --
 -- @param t  Table
--- @param[opt] compact  Remove unnecessary whitespace and use `;` for sibling tables whenever possible
--- @return[1] encoded nested structure
--- @return[2] `nil`
--- @return[2] error message in case of cyclic references
+-- @param[opt=2] indent  Indentation level to use, in spaces.
+--   If > 0, each value will be placed in a new line, prefixed by the given number of space characters.
+--   If == 0, no new lines will be used and values will be written separated by a single space character.
+--   If < 0, no new lines will be used and values will be written in a compacted and probably illegible way.
+-- @treturn string  Encoded nested structure
 -- @function encode
 
 --- Encode a nested table structure to file.
@@ -53,8 +54,11 @@
 --
 -- @param t  Table
 -- @param file_or_filename  File or filename to write to, opened with @{io.output}
--- @param[opt] compact  Remove unnecessary whitespace and use `;` for sibling tables whenever possible
--- @function encode
+-- @param[opt=0] indent  Indentation level to use, in spaces.
+-- @return[1] true
+-- @return[2] nil
+-- @return[2] Error message if writing to file failed
+-- @function encode_to_file
 
 
 --- Iterate over non-numeric key-value pairs.
