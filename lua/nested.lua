@@ -273,58 +273,64 @@ local function not_quoted(token)
     return token:sub(1, 1) ~= '"' or token:sub(-1) ~= '"'
 end
 
-local function encode_into(state, t)
-    local function append(v) state[#state + 1] = v end
-    if type(t) == 'table' then
-        if state[t] ~= nil then
-            append(anchor_reference_mt.new(state[t]))
-            return
-        end
-        local keypath, indent_spaces = state.keypath, state.indent_spaces
-        local function append_indent(level, or_space)
-            if indent_spaces > 0 then
-                append(indent_mt.new(indent_spaces, level))
-            elseif or_space then
-                append(' ')
-            end
-        end
-        append(anchor_mt.new(state))
-        local not_empty = next(t) ~= nil
-        if #state > 1 and not_empty then append_indent(#keypath, false) end
-        state[t] = state[#state]
-        local previous_state_level = #state
-        for i, v in ipairs(t) do
-            keypath[#keypath + 1] = i
-            encode_into(state, v)
-            keypath[#keypath] = nil
-            if indent_spaces >= 0 or (type(v) ~= 'table' and not_quoted(state[#state])) then append_indent(#keypath, true) end
-        end
-        for k, v in kpairs(t) do
-            -- TODO: error if k is table
-            keypath[#keypath + 1] = k
-            encode_into(state, k)
-            append(':')
-            if indent_spaces >= 0 then append(' ') end
-            encode_into(state, v)
-            keypath[#keypath] = nil
-            if indent_spaces >= 0 or (type(v) ~= 'table' and not_quoted(state[#state])) then append_indent(#keypath, true) end
-        end
-        if tostring(state[#state]):find('^%s+$') then state[#state] = nil end
-        if #state > previous_state_level then append_indent(#keypath - 1) end
-        append(']')
-    else
-        local encoded_value = tostring(t)
-        if encoded_value:match('[ ,\t\r\n%[%](){}:;]') or encoded_value:match('^[\'\"`#]') then
-            -- TODO: maybe find out the quotation mark that requires less escaping. If done, fix `not_quoted`
-            encoded_value = '"' .. encoded_value:gsub('"', '""') .. '"'
-        end
-        append(encoded_value)
-    end
-end
-
 local function encode(t, indent_spaces)
-    local state = { indent_spaces = math.min(math.floor(tonumber(indent_spaces) or 2), 8), keypath = {}, anchor_count = 0 }
-    local success, err = pcall(encode_into, state, t)
+    indent_spaces = math.min(math.floor(tonumber(indent_spaces) or 2), 8)
+    local compact = indent_spaces < 0
+    local state = { anchor_count = 0 }
+
+    local function append(v)
+        state[#state + 1] = v
+    end
+    local function last_is_space()
+        return tostring(state[#state]):find('^%s')
+    end
+    local function remove_last()
+        state[#state] = nil
+    end
+    local append_indent = indent_spaces > 0
+        and function(level, or_space)
+            append(indent_mt.new(indent_spaces, level))
+        end
+        or function(level, or_space)
+            if or_space then append(' ') end
+        end
+    local function encode_into(t, indent_level)
+        if type(t) == 'table' then
+            if state[t] ~= nil then
+                append(anchor_reference_mt.new(state[t]))
+                return
+            end
+            append(anchor_mt.new(state))
+            if #state > 1 and next(t) ~= nil then append_indent(indent_level, false) end
+            state[t] = state[#state]
+            local previous_state_level = #state
+            for i, v in ipairs(t) do
+                if compact and type(v) == 'table' and last_is_space() then remove_last() end
+                encode_into(v, indent_level + 1)
+                if not compact or (type(v) ~= 'table' and not_quoted(state[#state])) then append_indent(indent_level, true) end
+            end
+            for k, v in kpairs(t) do
+                -- TODO: error if k is table
+                encode_into(k, indent_level + 1)
+                append(':')
+                if not compact then append(' ') end
+                encode_into(v, indent_level + 1)
+                if not compact or (type(v) ~= 'table' and not_quoted(state[#state])) then append_indent(indent_level, true) end
+            end
+            if last_is_space() then remove_last() end
+            if #state > previous_state_level then append_indent(indent_level - 1, false) end
+            append(']')
+        else
+            local encoded_value = tostring(t)
+            if encoded_value:match('^[\'\"`#]') or encoded_value:match('[ ,\t\r\n%[%](){}:;]') then
+                -- TODO: maybe find out the quotation mark that requires less escaping. If done, fix `not_quoted`
+                encoded_value = '"' .. encoded_value:gsub('"', '""') .. '"'
+            end
+            append(encoded_value)
+        end
+    end
+
+    local success, err = pcall(encode_into, t, 0)
     if not success then
         return nil, err
     else
