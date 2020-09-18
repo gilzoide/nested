@@ -160,7 +160,7 @@ local function decode(text, options)
     local table_constructor = options.table_constructor or create_table
     local root_constructor = options.root_constructor or table_constructor
 
-    local current, key, value = root_constructor('', line, column)
+    local current, key, value = root_constructor('', 1, 1)
     local table_stack = { current }
     for line, column, event, token, quote in decode_iterate(text) do
         if event == 'TEXT' then
