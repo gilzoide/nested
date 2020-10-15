@@ -25,8 +25,8 @@ a list containing only key-value data would be like *maps* or *dictionaries*.
   being a value. To use `:` in a text value, the text must be quoted.
   Notice that keys are always text, but values can be either text or nested lists.
 
-It's interesting to notice that **Nested** is a superset of the [JSON](https://www.json.org) language,
-although it does not enforce the same semantics for non-textual values like numbers and `null`, nor
+It's interesting to notice that valid [JSON](https://www.json.org) files are also valid **Nested** files,
+although **Nested** does not enforce the same semantics for non-textual values like numbers and `null`, nor
 text escape sequences.
 
 
@@ -38,7 +38,7 @@ Install it using [LuaRocks](https://luarocks.org/):
 
     $ luarocks install nested
 
-Or just copy `nested.lua` into your Lua path and `require` it, the module has no dependencies.
+Or just copy `lua/nested.lua` into your Lua path and `require` it, the module has no dependencies.
 
 There is also a Command Line Interface script for reading and reformatting nested data in the file `lua/main.lua`.
 When installing with [LuaRocks](https://luarocks.org/), the CLI script is installed as the `nested` command.
