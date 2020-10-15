@@ -13,7 +13,7 @@ a list containing only key-value data would be like *maps* or *dictionaries*.
 - Any non-whitespace sequence that don't fall in any of the following rules
   is a text value
 - Parenthesis `()`, brackets `[]` or braces `{}` delimit a child list
-- Starting single quotes `'`, double quotes `"` and backticks ``` `` ``` delimit a single 
+- Starting single quotes `'`, double quotes `"` and backticks <code>\`</code> delimit a single 
   text value that may contain otherwise special characters, like `()`, `[]`, `,`, `:` or `;`.
   The quotation marks can be escaped by being doubled, so that the text `'one ''quoted'' phrase'`
   content becomes `one 'quoted' phrase`, for example. Notice that quotation marks can
@@ -25,7 +25,21 @@ a list containing only key-value data would be like *maps* or *dictionaries*.
   being a value. To use `:` in a text value, the text must be quoted.
   Notice that keys are always text, but values can be either text or nested lists.
 
+It's interesting to notice that **Nested** is a superset of the [JSON](https://www.json.org) language,
+although it does not enforce the same semantics for non-textual values like numbers and `null`, nor
+text escape sequences.
+
 
 ## Implementations
-For now, there is an implementation in [Lua](lua/README.md). [Lua tables](https://www.lua.org/pil/2.5.html)
+For now, there is an implementation in Lua. [Lua tables](https://www.lua.org/pil/2.5.html)
 are exactly a representation of data with both sequential and key-pair values.
+
+Install it using [Luarocks](https://luarocks.org/):
+
+    $ luarocks install --server=https://luarocks.org/dev nested
+
+Or just copy `nested.lua` into your Lua path and `require` it, the module has no dependencies.
+
+There is also a Command Line Interface script for reading and reformatting nested data in the file `lua/main.lua`.
+When installing with [Luarocks](https://luarocks.org/), the CLI script is installed as the `nested` command.
+

@@ -56,7 +56,7 @@ local LEXICAL_SCANNERS = {
     KEYVALUE = function(s) return TOKEN.KEYVALUE, 2 end,
     QUOTED = function(s)
         local delimiter = s:sub(1, 1)
-        local pattern = string.format("([^%s]*%s?)%s()", delimiter, delimiter, delimiter) -- ([^']*'?)'()
+        local pattern = string.format("([^%s]*%s?)%s()", delimiter, delimiter, delimiter) -- e.g.: ([^']*'?)'()
         local components = {}
         for m, pos in s:sub(2):gmatch(pattern) do
             components[#components + 1] = m
@@ -96,7 +96,7 @@ local function token_description(t)
     end
 end
 
-local PARSE_EVENTS = { 'TEXT', 'KEY', 'OPEN_NESTED', 'CLOSE_NESTED', 'SIBLING', 'ERROR' }
+local PARSE_EVENTS = { 'TEXT', 'KEY', 'OPEN_NESTED', 'CLOSE_NESTED', 'ERROR' }
 for i = 1, #PARSE_EVENTS do local name = PARSE_EVENTS[i]; PARSE_EVENTS[name] = name end
 
 local function decode_iterate_coroutine(text)
@@ -156,7 +156,6 @@ local function create_table() return {} end
 local function decode(text, options)
     options = options or EMPTY_OPTIONS
     local text_filter = options.text_filter
-    local table_filter = options.table_filter
     local table_constructor = options.table_constructor or create_table
     local root_constructor = options.root_constructor or table_constructor
 
