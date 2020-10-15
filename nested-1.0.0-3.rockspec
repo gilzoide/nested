@@ -1,6 +1,6 @@
 rockspec_format = "3.0"
 package = "nested"
-version = "1.0.0-2"
+version = "1.0.0-3"
 source = {
    url = "git://github.com/gilzoide/nested",
    tag = "1.0.0"
