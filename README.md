@@ -34,12 +34,12 @@ text escape sequences.
 For now, there is an implementation in Lua. [Lua tables](https://www.lua.org/pil/2.5.html)
 are exactly a representation of data with both sequential and key-pair values.
 
-Install it using [Luarocks](https://luarocks.org/):
+Install it using [LuaRocks](https://luarocks.org/):
 
-    $ luarocks install --server=https://luarocks.org/dev nested
+    $ luarocks install nested
 
 Or just copy `nested.lua` into your Lua path and `require` it, the module has no dependencies.
 
 There is also a Command Line Interface script for reading and reformatting nested data in the file `lua/main.lua`.
-When installing with [Luarocks](https://luarocks.org/), the CLI script is installed as the `nested` command.
+When installing with [LuaRocks](https://luarocks.org/), the CLI script is installed as the `nested` command.
 
