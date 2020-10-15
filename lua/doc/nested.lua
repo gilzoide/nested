@@ -1,6 +1,9 @@
 --- Nested data file format and nested tables functionality.
 -- @module nested
 
+--- Current version string
+-- @field _VERSION
+
 --- Postorder key to be passed to @{iterate} options (`'postorder'`)
 -- @field POSTORDER
 
