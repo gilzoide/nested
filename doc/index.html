@@ -1,0 +1,826 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<head>
+    <title>Reference</title>
+    <link rel="stylesheet" href="ldoc.css" type="text/css" />
+</head>
+<body>
+
+<div id="container">
+
+<div id="product">
+	<div id="product_logo"></div>
+	<div id="product_name"><big><b></b></big></div>
+	<div id="product_description"></div>
+</div> <!-- id="product" -->
+
+
+<div id="main">
+
+
+<!-- Menu -->
+
+<div id="navigation">
+<br/>
+<h1>ldoc</h1>
+
+
+<h2>Contents</h2>
+<ul>
+<li><a href="#Fields">Fields</a></li>
+<li><a href="#Decoding">Decoding </a></li>
+<li><a href="#Encoding">Encoding </a></li>
+<li><a href="#Iterating_over_tables">Iterating over tables </a></li>
+<li><a href="#Getting_and_setting_nested_values">Getting and setting nested values </a></li>
+<li><a href="#Default_filters">Default filters </a></li>
+</ul>
+
+
+<h2>Modules</h2>
+<ul class="nowrap">
+  <li><strong>nested</strong></li>
+</ul>
+<h2>Topics</h2>
+<ul class="">
+  <li><a href="topics/README.md.html">README</a></li>
+  <li><a href="topics/01-Format.md.html">01-Format</a></li>
+</ul>
+
+</div>
+
+<div id="content">
+
+<h1>Module <code>nested</code></h1>
+<p>Nested data file format and nested tables functionality.</p>
+<p>
+
+</p>
+
+
+<h2><a href="#Fields">Fields</a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#_VERSION">_VERSION</a></td>
+	<td class="summary">Current version string</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#POSTORDER">POSTORDER</a></td>
+	<td class="summary">Postorder key to be passed to <a href="index.html#iterate">iterate</a> options (<code>&apos;postorder&apos;</code>)</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#POSTORDER_ONLY">POSTORDER_ONLY</a></td>
+	<td class="summary">Postorder only value to be passed to <a href="index.html#iterate">iterate</a> options (<code>&apos;only&apos;</code>)</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#TABLE_ONLY">TABLE_ONLY</a></td>
+	<td class="summary">Table only key to be passed to <a href="index.html#iterate">iterate</a> options (<code>&apos;table_only&apos;</code>)</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#INCLUDE_KV">INCLUDE_KV</a></td>
+	<td class="summary">Include key-value key to be passed to <a href="index.html#iterate">iterate</a> options (<code>&apos;include_kv&apos;</code>)</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#SKIP_ROOT">SKIP_ROOT</a></td>
+	<td class="summary">Skip root key to be passed to <a href="index.html#iterate">iterate</a> options (<code>&apos;skip_root&apos;</code>)</td>
+	</tr>
+</table>
+<h2><a href="#Decoding">Decoding </a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#decode">decode (text[, options])</a></td>
+	<td class="summary">Decode a nested structure from text.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#decode_file">decode_file (file_or_filename[, options])</a></td>
+	<td class="summary">Decode a nested structure from file.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#decode_iterate">decode_iterate (text)</a></td>
+	<td class="summary">Iterator function that parses nested structure from text input, yielding meaningful tokens.</td>
+	</tr>
+</table>
+<h2><a href="#Encoding">Encoding </a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#encode">encode (t[, indent=2])</a></td>
+	<td class="summary">Encode a nested table structure to text.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#encode_to_file">encode_to_file (t, file_or_filename[, indent])</a></td>
+	<td class="summary">Encode a nested table structure to file.</td>
+	</tr>
+</table>
+<h2><a href="#Iterating_over_tables">Iterating over tables </a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#kpairs">kpairs (t)</a></td>
+	<td class="summary">Iterate over non-numeric key-value pairs.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#iterate">iterate (t[, options])</a></td>
+	<td class="summary">Iterate in depth over a nested table.</td>
+	</tr>
+</table>
+<h2><a href="#Getting_and_setting_nested_values">Getting and setting nested values </a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#get">get (t, ...)</a></td>
+	<td class="summary">Get the value of a nested table.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#get_or_create">get_or_create (t, ...)</a></td>
+	<td class="summary">Similar to <a href="index.html#get">get</a>, but creates the nested structure if it doesn't exist yet.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#set">set (t, ...)</a></td>
+	<td class="summary">Set the value of a nested table.</td>
+	</tr>
+	<tr>
+	<td class="name" nowrap><a href="#set_or_create">set_or_create (t, ...)</a></td>
+	<td class="summary">Similar to <a href="index.html#set">set</a>, but creates the nested structure if it doesn't exist yet.</td>
+	</tr>
+</table>
+<h2><a href="#Default_filters">Default filters </a></h2>
+<table class="function_list">
+	<tr>
+	<td class="name" nowrap><a href="#bool_number_filter">bool_number_filter (text[, quotation_mark])</a></td>
+	<td class="summary">Simple text filter that reads unquoted boolean and number values, meant to be passed to <a href="index.html#decode">decode</a>.</td>
+	</tr>
+</table>
+
+<br/>
+<br/>
+
+
+    <h2 class="section-header "><a name="Fields"></a>Fields</h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "_VERSION"></a>
+    <strong>_VERSION</strong>
+    </dt>
+    <dd>
+    Current version string
+
+
+    <ul>
+        <li><span class="parameter">_VERSION</span>
+
+
+
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "POSTORDER"></a>
+    <strong>POSTORDER</strong>
+    </dt>
+    <dd>
+    Postorder key to be passed to <a href="index.html#iterate">iterate</a> options (<code>&apos;postorder&apos;</code>)
+
+
+    <ul>
+        <li><span class="parameter">POSTORDER</span>
+
+
+
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "POSTORDER_ONLY"></a>
+    <strong>POSTORDER_ONLY</strong>
+    </dt>
+    <dd>
+    Postorder only value to be passed to <a href="index.html#iterate">iterate</a> options (<code>&apos;only&apos;</code>)
+
+
+    <ul>
+        <li><span class="parameter">POSTORDER_ONLY</span>
+
+
+
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "TABLE_ONLY"></a>
+    <strong>TABLE_ONLY</strong>
+    </dt>
+    <dd>
+    Table only key to be passed to <a href="index.html#iterate">iterate</a> options (<code>&apos;table_only&apos;</code>)
+
+
+    <ul>
+        <li><span class="parameter">TABLE_ONLY</span>
+
+
+
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "INCLUDE_KV"></a>
+    <strong>INCLUDE_KV</strong>
+    </dt>
+    <dd>
+    Include key-value key to be passed to <a href="index.html#iterate">iterate</a> options (<code>&apos;include_kv&apos;</code>)
+
+
+    <ul>
+        <li><span class="parameter">INCLUDE_KV</span>
+
+
+
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+    <dt>
+    <a name = "SKIP_ROOT"></a>
+    <strong>SKIP_ROOT</strong>
+    </dt>
+    <dd>
+    Skip root key to be passed to <a href="index.html#iterate">iterate</a> options (<code>&apos;skip_root&apos;</code>)
+
+
+    <ul>
+        <li><span class="parameter">SKIP_ROOT</span>
+
+
+
+        </li>
+    </ul>
+
+
+
+
+
+</dd>
+</dl>
+    <h2 class="section-header "><a name="Decoding"></a>Decoding </h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "decode"></a>
+    <strong>decode (text[, options])</strong>
+    </dt>
+    <dd>
+    Decode a nested structure from text. </p>
+
+<p> In case of unmatched quotes or unbalanced block delimiters, returns <code>nil</code> plus error message.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">text</span>
+          Text to be decoded
+        </li>
+        <li><span class="parameter">options</span>
+
+<p>  Table with any of the optional following fields:</p>
+
+<ul>
+    <li><code>text_filter</code>: Function to filter data from text values.
+       Receives the text, quotation mark, starting line and column as parameters.
+       If it returns a non-<code>nil</code> value, the text is replaced by it in the resulting table.</li>
+    <li><code>table_constructor</code>: Function used for constructing tables.
+       Receives as parameter the opening character: <code>&apos;&apos;</code> for toplevel tables, <code>(</code>, <code>[</code> or <code>{</code>,
+       the starting line and column as parameters
+       Must return a table.
+       This is useful for injecting metatables into resulting nested structure.</li>
+    <li><code>root_constructor</code>: Function used for constructing the root table.
+       Defaults to <code>table_constructor</code>, if specified.</li>
+</ul>
+
+
+         (<em>optional</em>)
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        nested table decoded
+    </ol>
+     <h3>Or</h3>
+    <ol>
+        <li>
+        <code>nil</code></li>
+        <li>
+        error message</li>
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "decode_file"></a>
+    <strong>decode_file (file_or_filename[, options])</strong>
+    </dt>
+    <dd>
+    Decode a nested structure from file. </p>
+
+<p> This uses <a href="index.html#decode">decode</a>, so the same caveats apply.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">file_or_filename</span>
+          File or filename to read from, opened with <a href="https://www.lua.org/manual/5.1/manual.html#pdf-io.input">io.input</a>
+        </li>
+        <li><span class="parameter">options</span>
+          Forwarded to <a href="index.html#decode">decode</a>
+         (<em>optional</em>)
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        nested table decoded
+    </ol>
+     <h3>Or</h3>
+    <ol>
+        <li>
+        <code>nil</code></li>
+        <li>
+        error message</li>
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="index.html#decode">decode</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "decode_iterate"></a>
+    <strong>decode_iterate (text)</strong>
+    </dt>
+    <dd>
+    Iterator function that parses nested structure from text input, yielding meaningful tokens. </p>
+
+<p> This allows one to fully customize the results from parsing, for example
+ stopping before reading the whole text and ignoring whole branches from the input.</p>
+
+<p> Each time the coroutine is resumed, it yields the current line and column, the parsing event
+ and additional information if needed. Check out the usage example for possible values and
+ meaning of each value.</p>
+
+<p> Check out the implementation of <a href="index.html#decode">decode</a> for a concrete example of usage.</p>
+
+<p> Unless the given parameter is not a string, the coroutine should not error.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">text</span>
+          Text to be decoded
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><span class="type">function</span></span>
+        Coroutine function for parsing
+    </ol>
+
+
+
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example"><span class="keyword">for</span> line, column, event, token, quote <span class="keyword">in</span> nested.decode_iterate(text) <span class="keyword">do</span>
+    <span class="keyword">if</span> event == <span class="string">'TEXT'</span> <span class="keyword">then</span>
+        <span class="comment">-- token: string representing the text value
+</span>        <span class="comment">-- quote: nil if text is not quoted, or one of ' " ` otherwise
+</span>    <span class="keyword">elseif</span> event == <span class="string">'KEY'</span> <span class="keyword">then</span>
+        <span class="comment">-- token: the key used in a key-value form "key:"
+</span>        <span class="comment">-- quote: nil if the key is not quoted, or one of ' " ` otherwise
+</span>    <span class="keyword">elseif</span> event == <span class="string">'OPEN_NESTED'</span> <span class="keyword">then</span>
+        <span class="comment">-- token: the opening token for nested tables, one of [ { (
+</span>    <span class="keyword">elseif</span> event == <span class="string">'CLOSE_NESTED'</span> <span class="keyword">then</span>
+        <span class="comment">-- token: the closing token for nested tables, one of ] } )
+</span>    <span class="keyword">elseif</span> event == <span class="string">'ERROR'</span> <span class="keyword">then</span>
+        <span class="comment">-- token: the error message
+</span>        <span class="comment">-- iteration ends after the first error, no need for <code>break</code>
+</span>    <span class="keyword">end</span>
+<span class="keyword">until</span> <span class="keyword">not</span> event</pre>
+    </ul>
+
+</dd>
+</dl>
+    <h2 class="section-header "><a name="Encoding"></a>Encoding </h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "encode"></a>
+    <strong>encode (t[, indent=2])</strong>
+    </dt>
+    <dd>
+    Encode a nested table structure to text. </p>
+
+<p> Non-table values are encoded using <a href="https://www.lua.org/manual/5.1/manual.html#pdf-tostring">tostring</a>, so <code>__tostring</code> metamethods may be called for userdata.</p>
+
+<p> Althought the nested textual format doesn't support references between tables other than
+ parent/child relations, Lua does. For this matter, anchors of the form <code>&amp;N</code>, where <code>N</code> is a number,
+ are placed in tables that are referenced somewhere else, with the references for the table
+ written in the form <code>*N</code> with the same numerical <code>N</code> used before.</p>
+
+<p> In the same line, although the nested textual format only supports text as keys, table keys in
+ Lua might be booleans, functions, userdata or other tables. This function will encode them,
+ but be aware that the resulting text might error when read again with <a href="index.html#decode">decode</a>, and that
+ nested is not a complete serialization scheme for Lua tables.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">t</span>
+          Table
+        </li>
+        <li><span class="parameter">indent</span>
+          Indentation level to use, in spaces.
+   If > 0, each value will be placed in a new line, prefixed by the given number of space characters.
+   If == 0, no new lines will be used and values will be written separated by a single space character.
+   If &lt; 0, no new lines will be used and values will be written in a compacted and probably illegible way.
+         (<em>default</em> 2)
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+           <span class="types"><a class="type" href="https://www.lua.org/manual/5.1/manual.html#5.4">string</a></span>
+        Encoded nested structure
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "encode_to_file"></a>
+    <strong>encode_to_file (t, file_or_filename[, indent])</strong>
+    </dt>
+    <dd>
+    Encode a nested table structure to file. </p>
+
+<p> This uses <a href="index.html#encode">encode</a>, so the same caveats apply.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">t</span>
+          Table
+        </li>
+        <li><span class="parameter">file_or_filename</span>
+          File or filename to write to, opened with <a href="https://www.lua.org/manual/5.1/manual.html#pdf-io.output">io.output</a>
+        </li>
+        <li><span class="parameter">indent</span>
+          Forwarded to <a href="index.html#encode">encode</a>.
+         (<em>optional</em>)
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        true
+    </ol>
+     <h3>Or</h3>
+    <ol>
+        <li>
+        nil</li>
+        <li>
+        Error message if writing to file failed</li>
+    </ol>
+
+
+
+
+</dd>
+</dl>
+    <h2 class="section-header "><a name="Iterating_over_tables"></a>Iterating over tables </h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "kpairs"></a>
+    <strong>kpairs (t)</strong>
+    </dt>
+    <dd>
+    Iterate over non-numeric key-value pairs. </p>
+
+<p> This is a shallow iteration. For iterating over nested tables, use <a href="index.html#iterate">iterate</a> instead.</p>
+
+<p> This uses <a href="https://www.lua.org/manual/5.1/manual.html#pdf-pairs">pairs</a>, so the <code>__pairs</code> metamethod may be called in Lua 5.2+
+
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">t</span>
+          Table
+        </li>
+    </ul>
+
+
+
+
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example"><span class="keyword">for</span> k, v <span class="keyword">in</span> nested.kpairs(t) <span class="keyword">do</span>
+    ...
+<span class="keyword">end</span></pre>
+    </ul>
+
+</dd>
+    <dt>
+    <a name = "iterate"></a>
+    <strong>iterate (t[, options])</strong>
+    </dt>
+    <dd>
+    Iterate in depth over a nested table. </p>
+
+<p> On each call, returns a sequence table with the current key path, value, parent table and boolean flag
+ signaling if going deeper (preorder traversal) into the nested structure or not (postorder traversal).
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">t</span>
+          Table
+        </li>
+        <li><span class="parameter">options</span>
+
+<p>  Table with any of the following fields:</p>
+
+<ul>
+    <li><code>postorder</code>: if truthy, also yield values when traversing back from the default preorder traversal.
+       If equal to <code>&quot;only&quot;</code>, perform only the postorder traversal.</li>
+    <li><code>table_only</code>: if truthy, yield table values only.</li>
+    <li><code>include_kv</code>: if truthy, iterate on key-value pairs as well as numeric indices.</li>
+    <li><code>skip_root</code>: if truthy, iterate on key-value pairs as well as numeric indices.</li>
+</ul>
+
+
+         (<em>optional</em>)
+        </li>
+    </ul>
+
+
+
+
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example"><span class="keyword">for</span> keypath, value, parent, going_deeper <span class="keyword">in</span> nested.iterate(t) <span class="keyword">do</span>
+    ...
+<span class="keyword">end</span></pre>
+    </ul>
+
+</dd>
+</dl>
+    <h2 class="section-header "><a name="Getting_and_setting_nested_values"></a>Getting and setting nested values </h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "get"></a>
+    <strong>get (t, ...)</strong>
+    </dt>
+    <dd>
+    Get the value of a nested table. </p>
+
+<p> If the given key path cannot be indexed, returns <code>nil</code> plus a message with
+ where on the key path indexing failed.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">t</span>
+          Table
+        </li>
+        <li><span class="parameter">...</span>
+          Values passed in form the key path, with which each nested table will be indexed.
+   If only one value is passed and it is a table, it is treated as the keypath.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        value
+    </ol>
+     <h3>Or</h3>
+    <ol>
+        <li>
+        <code>nil</code></li>
+        <li>
+        error message</li>
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "get_or_create"></a>
+    <strong>get_or_create (t, ...)</strong>
+    </dt>
+    <dd>
+    Similar to <a href="index.html#get">get</a>, but creates the nested structure if it doesn't exist yet.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">t</span>
+          Table
+        </li>
+        <li><span class="parameter">...</span>
+          Values that form the key path, just like in <a href="index.html#get">get</a>.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        value
+    </ol>
+     <h3>Or</h3>
+    <ol>
+        <li>
+        <code>nil</code></li>
+        <li>
+        error message</li>
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="index.html#get">get</a>
+    </ul>
+
+
+</dd>
+    <dt>
+    <a name = "set"></a>
+    <strong>set (t, ...)</strong>
+    </dt>
+    <dd>
+    Set the value of a nested table. </p>
+
+<p> If the given key path cannot be indexed, returns <code>nil</code> plus a message with
+ where on the key path indexing failed.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">t</span>
+          Table
+        </li>
+        <li><span class="parameter">...</span>
+          The first values passed in form the key path, and the last one is the value to be set.
+   If the key path has only one table value, then it is treated as the keypath.</p>
+
+<p>   To unset a value, <code>nil</code> have to be passed explicitly as the last argument.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        <code>t</code>
+    </ol>
+     <h3>Or</h3>
+    <ol>
+        <li>
+        <code>nil</code></li>
+        <li>
+        error message</li>
+    </ol>
+
+
+
+
+</dd>
+    <dt>
+    <a name = "set_or_create"></a>
+    <strong>set_or_create (t, ...)</strong>
+    </dt>
+    <dd>
+    Similar to <a href="index.html#set">set</a>, but creates the nested structure if it doesn't exist yet.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">t</span>
+          Table
+        </li>
+        <li><span class="parameter">...</span>
+          Values to form the key path and value to be set, just like in <a href="index.html#set">set</a>.
+        </li>
+    </ul>
+
+    <h3>Returns:</h3>
+    <ol>
+
+        <code>t</code>
+    </ol>
+     <h3>Or</h3>
+    <ol>
+        <li>
+        <code>nil</code></li>
+        <li>
+        error message</li>
+    </ol>
+
+
+    <h3>See also:</h3>
+    <ul>
+         <a href="index.html#set">set</a>
+    </ul>
+
+
+</dd>
+</dl>
+    <h2 class="section-header "><a name="Default_filters"></a>Default filters </h2>
+
+    <dl class="function">
+    <dt>
+    <a name = "bool_number_filter"></a>
+    <strong>bool_number_filter (text[, quotation_mark])</strong>
+    </dt>
+    <dd>
+    Simple text filter that reads unquoted boolean and number values, meant to be passed to <a href="index.html#decode">decode</a>. </p>
+
+<p> Literal <code>true</code> and <code>false</code> values are recognized as the boolean <code>true</code> and <code>false</code> lua values.
+ Quoted versions, like <code>&quot;true&quot;</code> and <code>&apos;false&apos;</code> are not parsed and treated as strings.</p>
+
+<p> Numbers are read with <a href="https://www.lua.org/manual/5.1/manual.html#pdf-tonumber">tonumber</a>. Similar to booleans, quoted numbers like <code>&apos;1&apos;</code> or <code>&quot;0.5&quot;</code> are
+ not parsed and treated as strings.
+
+
+    <h3>Parameters:</h3>
+    <ul>
+        <li><span class="parameter">text</span>
+
+
+
+        </li>
+        <li><span class="parameter">quotation_mark</span>
+
+
+
+         (<em>optional</em>)
+        </li>
+    </ul>
+
+
+
+
+    <h3>Usage:</h3>
+    <ul>
+        <pre class="example"><span class="keyword">local</span> data = nested.decode(text, { text_filter = nested.bool_number_filter })</pre>
+    </ul>
+
+</dd>
+</dl>
+
+
+</div> <!-- id="content" -->
+</div> <!-- id="main" -->
+<div id="about">
+<i>generated by <a href="http://github.com/stevedonovan/LDoc">LDoc 1.4.6</a></i>
+<i style="float:right;">Last updated 2020-10-14 22:09:07 </i>
+</div> <!-- id="about" -->
+</div> <!-- id="container" -->
+</body>
+</html>

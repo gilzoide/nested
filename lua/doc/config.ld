@@ -1,2 +1,2 @@
-format = 'markdown'
-readme = {"../../README.md", '01-Format.md'}
+format = "markdown"
+readme = {"README.md", "lua/doc/01-Format.md"}

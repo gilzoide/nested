@@ -1,6 +1,6 @@
 rockspec_format = "3.0"
 package = "nested"
-version = "1.0.0-1"
+version = "1.0.0-2"
 source = {
    url = "git://github.com/gilzoide/nested",
    tag = "1.0.0"
@@ -25,14 +25,14 @@ dependencies = {
 build = {
    type = "builtin",
    modules = {
-      nested = "nested.lua"
+      nested = "lua/nested.lua"
    },
    copy_directories = {
-      "doc/doc"
+      "doc"
    },
    install = {
       bin = {
-         nested = "main.lua"
+         nested = "lua/main.lua"
       }
    }
 }
