@@ -43,3 +43,10 @@ Or just copy `nested.lua` into your Lua path and `require` it, the module has no
 There is also a Command Line Interface script for reading and reformatting nested data in the file `lua/main.lua`.
 When installing with [LuaRocks](https://luarocks.org/), the CLI script is installed as the `nested` command.
 
+## Documentation
+[LDoc](https://github.com/lunarmodules/LDoc) based documentation for the Lua module is
+available at [github pages](https://gilzoide.github.io/nested/) and can be generated with
+the following command:
+
+    $ ldoc lua/doc -d docs
+
