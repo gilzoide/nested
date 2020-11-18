@@ -105,7 +105,7 @@ local function decode_iterate_coroutine(text)
     local expected_closing_token = MATCHING_CLOSING_BLOCK['']
     local expected_closing_stack = { expected_closing_token }
 
-    local token, previous_token, advance, newlines, newcolumn, quotation_mark
+    local token, previous_token, previous_token_before_blank, advance, newlines, newcolumn, quotation_mark
     repeat
         previous_token = token
         token, advance, newlines, newcolumn, quotation_mark = read_next_token(text)
@@ -114,10 +114,16 @@ local function decode_iterate_coroutine(text)
             break
         elseif type(token) == 'string' then
             if peek_token_type_name(text:sub(advance)) == 'KEYVALUE' then
-                send_event(PARSE_EVENTS.KEY, token, quotation_mark)
+                if previous_token_before_blank == TOKEN.KEYVALUE then
+                    send_event(PARSE_EVENTS.ERROR, 'Key-value mapping value cannot be another key')
+                    break
+                else
+                    send_event(PARSE_EVENTS.KEY, token, quotation_mark)
+                end
             else
                 send_event(PARSE_EVENTS.TEXT, token, quotation_mark)
             end
+            previous_token_before_blank = token
         elseif token == TOKEN.EOF or token == TOKEN.CLOSE_BRACKETS or token == TOKEN.CLOSE_PAREN or token == TOKEN.CLOSE_BRACES then
             if token == expected_closing_token then
                 if token == TOKEN.EOF then break end
@@ -128,15 +134,18 @@ local function decode_iterate_coroutine(text)
                 send_event(PARSE_EVENTS.ERROR, string.format('Expected closing block with %s, but found %s', token_description(expected_closing_token), token_description(token)))
                 break
             end
+            previous_token_before_blank = token
         elseif token == TOKEN.OPEN_BRACKETS or token == TOKEN.OPEN_PAREN or token == TOKEN.OPEN_BRACES then
             send_event(PARSE_EVENTS.OPEN_NESTED, TOKEN_DESCRIPTION[token])
             expected_closing_token = MATCHING_CLOSING_BLOCK[token]
             table.insert(expected_closing_stack, expected_closing_token)
+            previous_token_before_blank = token
         elseif token == TOKEN.KEYVALUE then
             if type(previous_token) ~= 'string' then
                 send_event(PARSE_EVENTS.ERROR, string.format('Key-value mapping must appear right after text, found %s instead', token_description(previous_token)))
                 break
             end
+            previous_token_before_blank = token
         else
              -- TODO: after thorough testing, remove unecessary assertion
             assert(token == TOKEN.SPACE or token == TOKEN.COMMENT or token == TOKEN.NEWLINE, 'FIXME!!!')
