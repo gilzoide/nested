@@ -58,7 +58,7 @@ local LEXICAL_SCANNERS = {
         local delimiter = s:sub(1, 1)
         local pattern = string.format("([^%s]*%s?)%s()", delimiter, delimiter, delimiter) -- e.g.: ([^']*'?)'()
         local components = {}
-        for m, pos in s:sub(2):gmatch(pattern) do
+        for m, pos in s:gmatch(pattern, 2) do
             components[#components + 1] = m
             if m:sub(-1) ~= delimiter then
                 local result = table.concat(components)
