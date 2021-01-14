@@ -1,8 +1,9 @@
 rockspec_format = "3.0"
 package = "nested-cli"
-version = "scm-3"
+version = "1.0.2-1"
 source = {
     url = "git://github.com/gilzoide/nested",
+    tag = "1.0.2",
 }
 description = {
     summary = "CLI for Nested data structure textual format",
