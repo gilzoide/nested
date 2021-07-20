@@ -1,15 +1,20 @@
 local nested = require 'nested'
 local lapp = require 'pl.lapp'
 local OrderedMap = require 'pl.OrderedMap'
+local pretty = require 'pl.pretty'
 
 local args = lapp [[
-Usage: nested [--table] [--indent <indent>] [<input>] [-o <output>]
+Usage:
+  nested [<input>] [-o <output>] [--table] [--indent <indent>]
+  nested (-h | --help)
 
 Options:
-  --table                       Output a `require`able lua script that returns the data as a single table
+  <input> (default stdin)       Input file. If absent, reads from stdin.
+  -o,--output (default stdout)  Output file. If absent, writes to stdout.
+  --table                       Output a `require`able lua script that returns the data as a single table.
   -i,--indent (default 2)       Indentation level used.
-  <input> (default stdin)       Input file. If absent, reads from stdin
-  -o,--output (default stdout)  Output file. If absent, writes to stdout
+
+  -h,--help                     Print this usage help and exit.
 ]]
 
 local have_stringstream, stringstream = pcall(require, 'stringstream')
