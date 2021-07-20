@@ -1,6 +1,7 @@
 local nested = require 'nested'
 local stringstream = require 'stringstream'
-require 'pl'
+local lapp = require 'pl.lapp'
+local OrderedMap = require 'pl.OrderedMap'
 
 local args = lapp [[
 Usage: nested [--table] [--indent <indent>] [<input>] [-o <output>]
@@ -12,9 +13,6 @@ Options:
   -o,--output (default stdout)  Output file. If absent, writes to stdout
 ]]
 
-if args.input_name == '-' then args.input:close(); args.input = io.stdin end
-if args.output_name == '-' then args.output:close(); args.output = io.stdout end
-
 local stream = assert(stringstream.new(args.input, nil, 4096))
 local contents = assert(nested.decode(stream, {
     text_filter = args.table and nested.bool_number_filter or nil,
@@ -25,5 +23,6 @@ if args.table then
     local ret = args.indent <= 0 and 'return' or 'return '
     args.output:write(ret .. pretty.write(contents, string.rep(' ', args.indent)))
 else
-    assert(nested.encode_to_file(contents, args.output, args.indent))
+    local encoded_value = assert(nested.encode(contents, args.indent))
+    args.output:write(encoded_value)
 end
