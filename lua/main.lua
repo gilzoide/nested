@@ -1,5 +1,4 @@
 local nested = require 'nested'
-local stringstream = require 'stringstream'
 local lapp = require 'pl.lapp'
 local OrderedMap = require 'pl.OrderedMap'
 
@@ -13,7 +12,8 @@ Options:
   -o,--output (default stdout)  Output file. If absent, writes to stdout
 ]]
 
-local stream = assert(stringstream.new(args.input, nil, 4096))
+local have_stringstream, stringstream = pcall(require, 'stringstream')
+local stream = have_stringstream and assert(stringstream.new(args.input, nil, 4096)) or args.input:read('*a')
 local contents = assert(nested.decode(stream, {
     text_filter = args.table and nested.bool_number_filter or nil,
     table_constructor = function() return OrderedMap() end,
