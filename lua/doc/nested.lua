@@ -118,6 +118,8 @@
 --   If > 0, each value will be placed in a new line, prefixed by the given number of space characters.
 --   If == 0, no new lines will be used and values will be written separated by a single space character.
 --   If < 0, no new lines will be used and values will be written in a compacted and probably illegible way.
+-- @param[opt] apply_tostring_to_tables
+--   If truthy, if a table has a `__tostring` metamethod, it will be applied instead of the default nested traversal.
 -- @treturn string  Encoded nested structure
 -- @function encode
 
@@ -128,6 +130,7 @@
 -- @param t  Table
 -- @param file_or_filename  File or filename to write to, opened with @{io.output}
 -- @param[opt] indent  Forwarded to @{encode}.
+-- @param[opt] apply_tostring_to_tables  Forwarded to @{encode}.
 -- @return[1] true
 -- @return[2] nil
 -- @return[2] Error message if writing to file failed
