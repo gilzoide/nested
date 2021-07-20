@@ -7,15 +7,23 @@ local args = lapp [[
 Usage:
   nested [<input>] [-o <output>] [--table] [--indent <indent>]
   nested (-h | --help)
+  nested --version  
 
 Options:
   <input> (default stdin)       Input file. If absent, reads from stdin.
   -o,--output (default stdout)  Output file. If absent, writes to stdout.
   --table                       Output a `require`able lua script that returns the data as a single table.
   -i,--indent (default 2)       Indentation level used.
+                                If passed any negative number, provides the most compact output.
 
   -h,--help                     Print this usage help and exit.
+  --version                     Print app version and exit.
 ]]
+
+if args.version then
+    print('nested version ' .. nested._VERSION)
+    return
+end
 
 local have_stringstream, stringstream = pcall(require, 'stringstream')
 local stream = have_stringstream and assert(stringstream.new(args.input, nil, 4096)) or args.input:read('*a')
