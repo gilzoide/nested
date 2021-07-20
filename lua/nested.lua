@@ -286,7 +286,7 @@ local function has_tostring(t)
     return mt and mt.__tostring
 end
 
-local function encode(t, indent_spaces)
+local function encode(t, indent_spaces, apply_tostring_to_tables)
     indent_spaces = math.min(math.floor(tonumber(indent_spaces) or 2), 8)
     local compact = indent_spaces < 0
     local state = { anchor_count = 0 }
@@ -308,7 +308,7 @@ local function encode(t, indent_spaces)
             if or_space then append(' ') end
         end
     local function encode_into(t, indent_level)
-        if type(t) == 'table' and not has_tostring(t) then
+        if type(t) == 'table' and not (apply_tostring_to_tables and has_tostring(t)) then
             if state[t] ~= nil then
                 -- t was already encoded, just add a reference to it
                 append(anchor_reference_mt.new(state[t]))
