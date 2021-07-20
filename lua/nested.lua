@@ -460,5 +460,5 @@ return {
     TABLE_ONLY = TABLE_ONLY,
     INCLUDE_KV = INCLUDE_KV,
     SKIP_ROOT = SKIP_ROOT,
-    _VERSION = '1.0.2',
+    _VERSION = '1.1.0',
 }
