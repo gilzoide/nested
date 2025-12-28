@@ -17,7 +17,7 @@ local function keypath_invert(v)
         return nested_keypath.match(v), invert
     else
         return v, false
-    end 
+    end
 end
 
 local function match(t, pattern)

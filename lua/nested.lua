@@ -161,7 +161,7 @@ local function decode_iterate(text)
 end
 
 local EMPTY_OPTIONS = {}
-local function create_table() return {} end
+local function create_table(...) return {} end
 local function decode(text, options)
     options = options or EMPTY_OPTIONS
     local text_filter = options.text_filter
