@@ -99,7 +99,20 @@ public:
 			++column;
 			switch (c) {
 				case traits_type::eof():
-					current_token.type = END;
+					if (!expected_closing_stack.empty()) {
+						current_token.type = ERROR;
+						current_token.text = "Expected closing block with '";
+						current_token.text += expected_closing_stack.back();
+						current_token.text += "'";
+						current_token.line = line;
+						current_token.column = column;
+						current_token.quote = 0;
+						expected_closing_stack.pop_back();
+						--column;
+					}
+					else {
+						current_token.type = END;
+					}
 					return false;
 
 				case '[':
@@ -207,12 +220,13 @@ private:
 			current_token.text += "', but found '";
 			current_token.text += c;
 			current_token.text += "'";
+			expected_closing_stack.pop_back();
 			return false;
 		}
 		else {
-			expected_closing_stack.pop_back();
 			current_token.text = c;
 			current_token.type = CLOSE_NESTED;
+			expected_closing_stack.pop_back();
 			return true;
 		}
 	}
